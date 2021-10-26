@@ -1,9 +1,11 @@
 import os
-import json
 
-from bson import ObjectId, json_util
-from flask import Flask, Response, request, jsonify
+from flask import Flask, request
 from flask_pymongo import PyMongo
+
+from src.seed.seeder import seed
+from src.users.models import *
+
 
 # app initialization
 from src.messages.models import Message
@@ -45,9 +47,16 @@ message_schema = {'sender': 'Yariv', 'receiver': 'Nikol', 'message': 'Hello ther
 
 
 #  Home page
-@app.route("/api/")
+@app.route("/")
 def hello_world():
     return "Messaging System - RESTful API!"
+
+
+#  Home page
+@app.route("/seed", methods=['POST'])
+def seed_db():
+    seed(collection)
+    return "SEED"
 
 
 # Get all unread messages for specific user
@@ -59,42 +68,14 @@ def read_all_messages():
     """
 
     # TODO: Get from request param's and use them to filter message list. (e.g. to get unread messages only)
-    # params = {"isRead": None}
-    # req = request.args
-    # print("req: ", req)
-    #
-    # for param in req:
-    #     print("param: ", param)
+    try:
+        messages = Message.get_all_messages(collection)
+        return Response(json.dumps([message for message in messages], default=json_util.default),
+                        mimetype="application/json")
 
-    messages = collection.messages.find()
-    return Response(json.dumps([message for message in messages], default=json_util.default),
-                    mimetype="application/json")
-
-
-# Get all unread messages for a specific user
-# TODO: Replace this endpoint by "read-all-messages" with params
-@app.route('/read-unread-messages', methods=['GET'])
-def read_unread_messages():
-    """
-     Query all unread messages
-    :return
-    """
-
-    messages = collection.messages.find()
-    # iterable = json.dumps([message for message in messages], default=json_util.default)
-    iterable = {"_id": {"$oid": "61755a66e6493ae18fe77cdb"}, "sender": "Yariv", "receiver": "Nikol",
-                "message": "Hello there!", "subject": "Welcome", "created_at": 13, "isRead": True}
-    print("messages: ", messages)
-    print("iterable: ", iterable)
-
-    unread_messages = []
-
-    for key, value in iterable.items():
-        if key == "isRead" and value is True:
-            unread_messages.append({"message: ": iterable["message"]})
-
-    return Response(json.dumps([message for message in unread_messages], default=json_util.default),
-                    mimetype="application/json")
+    except Exception as e:
+        print("Error: ", e)
+        return e
 
 
 # Get only one message by id
@@ -105,17 +86,28 @@ def read_message(messageId):
     :param messageId: message identification number
     :return: Details of one message
     """
-
-    # Query message
-    message = collection.messages.find_one({"_id": ObjectId(messageId)})
     updated_message = None
+    try:
+        message = Message.get_message(collection, messageId)
+    except Exception as e:
+        return e
 
     if message is not None:
         # Message found
-        if message["isRead"] is False:
-            # Update isRead field to True
-            updated_message = collection.messages.find_one_and_update({"_id": ObjectId(messageId)},
-                                                                      {"$set": {"isRead": True}})
+
+        if message["is_read"] is False:
+            is_read = {"_id": ObjectId(messageId)}, {"$set": {"is_read": True}}
+
+            try:
+                response = Message.update_message(collection, is_read)
+                return Response(json.dumps(response, default=json_util.default), mimetype="application/json")
+
+            except Exception as e:
+                return {
+                    "status_code": 500,
+                    "message": str(e)
+                }
+
         return Response(json.dumps(message, default=json_util.default), mimetype="application/json")
 
     else:
@@ -127,10 +119,14 @@ def read_message(messageId):
 @app.route('/delete-message/<string:messageId>', methods=['DELETE'])
 def delete_message(messageId):
     # Query message
-    message = collection.messages.delete_one({"_id": ObjectId(messageId)})
-    # TODO: Fix return statment
-    # return Response(json.dumps(message, default=json_util.default), mimetype="application/json")
-    return 'Deleting succeeded'
+    # TODO: Fix return statment + status
+    # TODO: If message not found -> return correct message
+    try:
+        Message.delete(collection, messageId)
+        return 'Deleting succeeded'
+
+    except Exception as e:
+        return e
 
 
 # Write message
@@ -142,10 +138,32 @@ def write_messages():
                       request.args['message'],
                       request.args['subject'])
 
-    # Insert message into DB
-    result = collection.messages.insert_one(message.get_json())
     #  TODO: Adding to return message the id field
-    return 'Writing Succeeded'
+
+    try:
+        # Insert message into DB
+        response = message.save(collection)
+        return Response(json.dumps(response.inserted_id, default=json_util.default), mimetype="application/json")
+
+    except Exception as e:
+        return e
+
+
+# #######################################################################
+@app.route('/create-user', methods=['POST'])
+def create_user():
+    # Get param & create the User object
+    user = User(request.args['first_name'],
+                request.args['last_name'],
+                request.args['email'].lower(),
+                request.args['password'])
+
+    print("user: ", user.to_json)
+    try:
+        user.save(collection)
+        return 'Writing Succeeded'
+    except Exception as e:
+        return e
 
 
 if __name__ == '__main__':
