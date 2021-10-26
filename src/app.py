@@ -1,4 +1,3 @@
-# app.py
 import os
 import json
 
@@ -7,6 +6,8 @@ from flask import Flask, Response, request, jsonify
 from flask_pymongo import PyMongo
 
 # app initialization
+from src.messages.models import Message
+
 app = Flask(__name__)
 
 # mongoDB configuration & initialization
@@ -58,12 +59,12 @@ def read_all_messages():
     """
 
     # TODO: Get from request param's and use them to filter message list. (e.g. to get unread messages only)
-    params = {"isRead": None}
-    req = request.args
-    print("req: ", req)
-
-    for param in req:
-        print("param: ", param)
+    # params = {"isRead": None}
+    # req = request.args
+    # print("req: ", req)
+    #
+    # for param in req:
+    #     print("param: ", param)
 
     messages = collection.messages.find()
     return Response(json.dumps([message for message in messages], default=json_util.default),
@@ -105,35 +106,46 @@ def read_message(messageId):
     :return: Details of one message
     """
 
+    # Query message
     message = collection.messages.find_one({"_id": ObjectId(messageId)})
-    return Response(json.dumps(message, default=json_util.default), mimetype="application/json")
+    updated_message = None
+
+    if message is not None:
+        # Message found
+        if message["isRead"] is False:
+            # Update isRead field to True
+            updated_message = collection.messages.find_one_and_update({"_id": ObjectId(messageId)},
+                                                                      {"$set": {"isRead": True}})
+        return Response(json.dumps(message, default=json_util.default), mimetype="application/json")
+
+    else:
+        # Message not found
+        return Response("Message not found!", mimetype="application/json")
 
 
 # Delete message (as owner or as receiver)
 @app.route('/delete-message/<string:messageId>', methods=['DELETE'])
 def delete_message(messageId):
+    # Query message
     message = collection.messages.delete_one({"_id": ObjectId(messageId)})
-    print("Delete message: ", message)
-    # return Response(json.dumps(message, default=json_util.default), mimetype="application/json")
     # TODO: Fix return statment
-    return json.dumps(message)
+    # return Response(json.dumps(message, default=json_util.default), mimetype="application/json")
+    return 'Deleting succeeded'
 
 
 # Write message
 @app.route('/write-messages', methods=['POST'])
 def write_messages():
-    req_data = json.loads(request.data)
+    # Get param & create the Message object
+    message = Message(request.args['sender'],
+                      request.args['receiver'],
+                      request.args['message'],
+                      request.args['subject'])
 
-    # TODO: Create a new instance of Message object for our data
-    result = collection.messages.insert_one(req_data).inserted_id
-    print("result: ", result)
-
-    # TODO: return message id to server
-    return "", 204
-
-
-def get_messages():
-    return collection.messages.find()
+    # Insert message into DB
+    result = collection.messages.insert_one(message.get_json())
+    #  TODO: Adding to return message the id field
+    return 'Writing Succeeded'
 
 
 if __name__ == '__main__':
