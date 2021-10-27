@@ -19,4 +19,4 @@ git clone git@github.com:yariv1025/messaging-system-rest-api.git
     
 
 ### Perform calls with Postman:
-* 
+* Use the attached PDF file
