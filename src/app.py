@@ -22,8 +22,10 @@ isProduction = False if 'FLASK_ENV' in os.environ and os.environ['FLASK_ENV'] ==
 # usr = os.environ['MONGO_DB_USER']
 # pwd = os.environ['MONGO_DB_PASS']
 
-password = "Mongo1805"
-username = "yariv1052"
+password = ""
+username = ""
+
+
 
 mongo_uri = ""
 if isProduction:

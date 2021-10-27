@@ -1,9 +1,12 @@
 import json
 
-from bson import ObjectId, json_util
-from flask import Response
+from bson import json_util, ObjectId
+from flask import Response, request
 from passlib.hash import pbkdf2_sha256
+from pymongo import ReturnDocument
+
 from src import tools
+from src.messages.models import Message
 
 
 class User:
@@ -11,10 +14,10 @@ class User:
     def __init__(self, first_name, last_name, email, password):
         """
         Initialize User object
-        :param first_name (string): first name
-        :param last_name (string): last name
-        :param email (string): email
-        :param password (integer): password
+        :param first_name: first name
+        :param last_name: last name
+        :param email: email
+        :param password: password
         """
         self.defaults = {
             "first_name": first_name,
@@ -25,59 +28,107 @@ class User:
             "last_login": tools.nowDatetimeUTC()
         }
 
+    @staticmethod
+    def send_message(collection):
+        message = Message(request.args['sender'],
+                          request.args['receiver'],
+                          request.args['message'],
+                          request.args['subject'])
+
+        try:
+            # Insert message into DB
+            response = message.save(collection)
+            return Response(json.dumps(response.inserted_id, default=json_util.default), mimetype="application/json")
+
+        except Exception as e:
+            return e
+
+    @staticmethod
+    def read_all_messages(collection):
+        """
+        Read all user messages
+        :param collection: db collection
+        :return: All user messages
+        """
+
+        # TODO: Get from request param's and use them to filter message list. (e.g. to get unread messages only)
+        # TODO: Update is_read field for all messages
+        messages = Message.get_all_messages(collection)
+        return Response(json.dumps([message for message in messages], default=json_util.default),
+                        mimetype="application/json")
+
+    @staticmethod
+    def read_message(collection, messageId):
+        """
+        Find and return message
+        :param collection: db collection
+        :param messageId: message id
+        :return: one message
+        """
+
+        message = Message.get_message(collection, messageId)
+
+        if message is not None:
+            # Message found
+
+            if message["is_read"] is False:
+                # Update is_read flag
+                is_read = {"_id": ObjectId(messageId)}, {"$set": {"is_read": True}}
+                response = Message.update_message(collection, is_read)
+                return Response(json.dumps(response, default=json_util.default), mimetype="application/json")
+
+            # Returning the message without updating
+            return Response(json.dumps(message, default=json_util.default), mimetype="application/json")
+
+        else:
+            # Message not found
+            return Response("Message not found!", mimetype="application/json")
+
+    @staticmethod
+    def delete_message(collection, messageId):
+        """
+        Delete one message by id
+        :param collection: db collection
+        :param messageId: message id
+        :return: response / feedback
+        """
+        response = Message.delete(collection, messageId)
+        return {
+            "status_code": 200,
+            "Amount of deleted message:": json.dumps(response.deleted_count, default=json_util.default)
+        }
+
+    @staticmethod
+    def update_user(collection, userId, new_data):
+        """
+        Update user details
+        :param collection: db collection
+        :param userId: Mongo id
+        :param new_data: New data
+        :return:
+        """
+
+        user = collection.users.find_one({"_id": ObjectId(userId)})
+
+        if user:
+            # User found --> update fields
+            # return collection.users.find_one_and_update({"_id": ObjectId(user["_id"])}, {"$set": new_data})
+            return collection.users.find_one_and_update({"_id": userId}, {"$set": new_data})
+
+        else:
+            # User not found
+            return Response("User not found - update failed!", mimetype="application/json")
+
+    def save(self, collection):
+        """
+        Saving user into db
+        :param collection: db collection
+        :return:
+        """
+        return collection.users.insert_one(self.get_user())
+
     def get_user(self):
         """
         :return: user instance
         """
         return self.defaults.copy()
-
-    def update_user(self, userId, to_update):
-        """
-        Update user details
-        :param userId: Mongo id
-        :param to_update: A dictionary of {param_to_update: new_data}
-        :return:
-        """
-        # # TODO: Change userId to mongo id
-        # user = collection.Temporary.find_one({"_id": ObjectId(userId)})
-        # updated_user = None
-        #
-        # if user:
-        #     # User found --> update fields
-        #     updated_user = collection.Temporary.find_one_and_update({"_id": ObjectId(userId)},
-        #                                                                   {"$set": {param_to_update: new_data}})
-        #     return Response(json.dumps(user, default=json_util.default), mimetype="application/json")
-        #
-        # else:
-        #     # User not found
-        #     return Response("User not found - update failed!", mimetype="application/json")
-        pass
-
-    def to_json(self):
-        """
-       :return: JSON representation
-       """
-        return self.defaults.copy()
-
-    def get_all_messages(self, only_unread_messages=False, from_income=False, from_outcome=False):
-        """
-        Get all messages from income_messages / outcome_messages.
-        :param only_unread_messages: True for unread messages, False for all messages
-        :param from_income:
-        :param from_outcome:
-        :return:
-        """
-        pass
-
-    def send_message(self):
-        pass
-
-    def receive_message(self):
-        pass
-
-    def delete_message(self):
-        pass
-
-    def save(self, collection):
-        return collection.users.insert_one(self.to_json())
-

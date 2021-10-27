@@ -21,32 +21,34 @@ def token_required(f):
 
     return decorated
 
+# TODO: Temporary SECRET_KEY!! -> config.cfg file needed fixing
+SECRET_KEY = 'aQ70AYYoi4'
 
-def encodeAccessToken(user_id, email, plan):
+
+def encodeAccessToken(user_id, email):
     access_token = jwt.encode({
         "user_id": user_id,
         "email": email,
-        "plan": plan,
         "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=15)  # The token will expire in 15 minutes
-    }, app.config["SECRET_KEY"], algorithm="HS256")
+    }, SECRET_KEY, algorithm="HS256")
+    # }, app.config["SECRET_KEY"], algorithm="HS256")
 
     return access_token
 
 
-def encodeRefreshToken(user_id, email, plan):
+def encodeRefreshToken(user_id, email):
     """
     Encode refresh token
     :param user_id: user id
     :param email: email address
-    :param plan: user plan
     :return: refresh token
     """
     refresh_token = jwt.encode({
         "user_id": user_id,
         "email": email,
-        "plan": plan,
         "exp": datetime.datetime.utcnow() + datetime.timedelta(weeks=4)  # The token will expire in 4 weeks
-    }, app.config["SECRET_KEY"], algorithm="HS256")
+    }, SECRET_KEY, algorithm="HS256")
+    # }, app.config["SECRET_KEY"], algorithm="HS256")
 
     return refresh_token
 
