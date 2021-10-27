@@ -1,15 +1,16 @@
+import ast
 import os
 
-from flask import Flask, request
+from bson import ObjectId
+from flask import Flask
 from flask_pymongo import PyMongo
 
+from src import auth
 from src.seed.seeder import seed
 from src.users.models import *
-
-
-# app initialization
 from src.messages.models import Message
 
+# app initialization
 app = Flask(__name__)
 
 # mongoDB configuration & initialization
@@ -18,9 +19,9 @@ app.config['MONGO_DBNAME'] = 'messages'
 # Determining environment
 isProduction = False if 'FLASK_ENV' in os.environ and os.environ['FLASK_ENV'] == "development" else True
 
-#  TODO: Grab user/pass from the environment variables (config.cfg file?)
 # usr = os.environ['MONGO_DB_USER']
 # pwd = os.environ['MONGO_DB_PASS']
+
 password = "Mongo1805"
 username = "yariv1052"
 
@@ -35,20 +36,11 @@ app.config['MONGO_URI'] = mongo_uri
 # Create mongoDB client
 mongo_client = PyMongo(app)
 collection = mongo_client.db
-print("collection: ", collection)
-
-""" For testing """
-# print("messages: ", collection.messages.find_one({"_id": ObjectId("61755a66e6493ae18fe77cdb")}))
-# exit(0)
-
-
-message_schema = {'sender': 'Yariv', 'receiver': 'Nikol', 'message': 'Hello there!', 'subject': 'Welcome',
-                  'created_at': '13.10.12'}
 
 
 #  Home page
 @app.route("/")
-def hello_world():
+def home_page():
     return "Messaging System - RESTful API!"
 
 
@@ -60,22 +52,27 @@ def seed_db():
 
 
 # Get all unread messages for specific user
-@app.route('/read-all-messages', methods=['GET'])
-def read_all_messages():
+@app.route('/get-all-messages', methods=['GET'])
+def get_all_messages():
     """
-    Query all messages (per user)
+    Read all user messages
     :return: all messages for a specific user as a JSON file
     """
 
-    # TODO: Get from request param's and use them to filter message list. (e.g. to get unread messages only)
     try:
-        messages = Message.get_all_messages(collection)
-        return Response(json.dumps([message for message in messages], default=json_util.default),
-                        mimetype="application/json")
+        return User.read_all_messages(collection)
 
     except Exception as e:
-        print("Error: ", e)
-        return e
+        return {
+            "status_code": 500,
+            "message": str(e)
+        }
+
+
+# Get all unread messages for specific user
+@app.route('/get-all-messages/<is_read>', methods=['GET'])
+def get_all_unread_messages(is_read):
+    pass
 
 
 # Get only one message by id
@@ -86,71 +83,60 @@ def read_message(messageId):
     :param messageId: message identification number
     :return: Details of one message
     """
-    updated_message = None
+
+    # TODO:
+    # 1) Get user id -> DONE
+    # 2) Query the user from db -> X
+    # 2) Check authentication -> X
+    # 3) get message by id -> X
     try:
-        message = Message.get_message(collection, messageId)
+        return User.read_message(collection, messageId)
+
     except Exception as e:
-        return e
-
-    if message is not None:
-        # Message found
-
-        if message["is_read"] is False:
-            is_read = {"_id": ObjectId(messageId)}, {"$set": {"is_read": True}}
-
-            try:
-                response = Message.update_message(collection, is_read)
-                return Response(json.dumps(response, default=json_util.default), mimetype="application/json")
-
-            except Exception as e:
-                return {
-                    "status_code": 500,
-                    "message": str(e)
-                }
-
-        return Response(json.dumps(message, default=json_util.default), mimetype="application/json")
-
-    else:
-        # Message not found
-        return Response("Message not found!", mimetype="application/json")
+        return {
+            "status_code": 500,
+            "message": str(e)
+        }
 
 
 # Delete message (as owner or as receiver)
 @app.route('/delete-message/<string:messageId>', methods=['DELETE'])
 def delete_message(messageId):
-    # Query message
-    # TODO: Fix return statment + status
-    # TODO: If message not found -> return correct message
+    """
+    Delete one message by id
+    :param messageId: message id
+    :return: response / feedback
+    """
+
     try:
-        Message.delete(collection, messageId)
-        return 'Deleting succeeded'
+        return User.delete_message(collection, messageId)
 
     except Exception as e:
-        return e
+        return {
+            "status_code": 500,
+            "message": str(e)
+        }
 
 
 # Write message
 @app.route('/write-messages', methods=['POST'])
 def write_messages():
-    # Get param & create the Message object
-    message = Message(request.args['sender'],
-                      request.args['receiver'],
-                      request.args['message'],
-                      request.args['subject'])
-
-    #  TODO: Adding to return message the id field
-
+    # 1) Get user id -> query the user from db
+    # 2) Get receiver id
+    # 3) Check authentication
+    # 4) user.send_message(collection)
     try:
-        # Insert message into DB
-        response = message.save(collection)
-        return Response(json.dumps(response.inserted_id, default=json_util.default), mimetype="application/json")
+        return User.send_message(collection)
 
     except Exception as e:
-        return e
+        return {
+            "status_code": 500,
+            "message": str(e)
+        }
 
 
-# #######################################################################
-@app.route('/create-user', methods=['POST'])
+# User creation
+@app.route('/user', methods=['POST'])
 def create_user():
     # Get param & create the User object
     user = User(request.args['first_name'],
@@ -158,13 +144,54 @@ def create_user():
                 request.args['email'].lower(),
                 request.args['password'])
 
-    print("user: ", user.to_json)
-    try:
-        user.save(collection)
-        return 'Writing Succeeded'
-    except Exception as e:
-        return e
+    # Make sure there isn"t already a user with this email address
+    existing_email = collection.users.find_one({"email": request.args['email'].lower()})
+
+    if tools.validEmail(request.args['email']) and existing_email is None:
+
+        try:
+            response = user.save(collection)
+            return Response(json.dumps(response.inserted_id, default=json_util.default), mimetype="application/json")
+
+        except Exception as e:
+            return {"error": str(e)
+                    }, 500
+
+    else:
+        return {
+                   "message": "There's already an account with this email address",
+                   "error": "email_exists"
+               }, 409
+
+
+@app.route('/user', methods=['POST'])
+def login():
+    # response_user = user.save(collection)
+    # user_id = ast.literal_eval(json.dumps(response_user.inserted_id, default=json_util.default))["$oid"]
+    #
+    # # Log the user in (create and return tokens)
+    # access_token = auth.encodeAccessToken(user_id, user.get_user()["email"])
+    # refresh_token = auth.encodeRefreshToken(user_id, user.get_user()["email"])
+    #
+    # data_to_update = {"refresh_token": refresh_token, "access_token": access_token}
+    #
+    # response = user.update_user(collection, response_user.inserted_id, data_to_update)
+    # print("CHECK11")
+    pass
+
+
+# TODO: Delete?
+def create_update_list(internal_update=None):
+    fields_to_updates = {}
+
+    for key, value in request.args.items():
+        fields_to_updates["key"] = value
+
+    return fields_to_updates
 
 
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port=5000, debug=True)
+
+# TODO: Handling error returns
+# TODO: Grab user/pass from the environment variables (config.cfg file?)
