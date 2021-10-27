@@ -25,8 +25,6 @@ isProduction = False if 'FLASK_ENV' in os.environ and os.environ['FLASK_ENV'] ==
 password = ""
 username = ""
 
-
-
 mongo_uri = ""
 if isProduction:
     mongo_uri = f'mongodb+srv://{username}:{password}@cluster0.jryya.mongodb.net/messaging_system?retryWrites=true&w=majority'
