@@ -38,7 +38,7 @@ class User:
         try:
             # Insert message into DB
             response = message.save(collection)
-            return Response(json.dumps(response.inserted_id, default=json_util.default), mimetype="application/json")
+            return tools.JsonResp(response.inserted_id, 200)
 
         except Exception as e:
             return e
@@ -54,8 +54,7 @@ class User:
         # TODO: Get from request param's and use them to filter message list. (e.g. to get unread messages only)
         # TODO: Update is_read field for all messages
         messages = Message.get_all_messages(collection)
-        return Response(json.dumps([message for message in messages], default=json_util.default),
-                        mimetype="application/json")
+        return tools.JsonResp([message for message in messages], 200)
 
     @staticmethod
     def read_message(collection, messageId):
@@ -75,10 +74,10 @@ class User:
                 # Update is_read flag
                 is_read = {"_id": ObjectId(messageId)}, {"$set": {"is_read": True}}
                 response = Message.update_message(collection, is_read)
-                return Response(json.dumps(response, default=json_util.default), mimetype="application/json")
+                return tools.JsonResp(response, 200)
 
             # Returning the message without updating
-            return Response(json.dumps(message, default=json_util.default), mimetype="application/json")
+            return tools.JsonResp(message, 200)
 
         else:
             # Message not found
@@ -113,7 +112,7 @@ class User:
         if user:
             # User found --> update fields
             # return collection.users.find_one_and_update({"_id": ObjectId(user["_id"])}, {"$set": new_data})
-            return collection.users.find_one_and_update({"_id": userId}, {"$set": new_data})
+            return collection.users.find_one_and_update({"_id": userId}, {"$set": new_data}, upsert=True)
 
         else:
             # User not found
