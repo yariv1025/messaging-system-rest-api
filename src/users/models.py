@@ -115,17 +115,33 @@ class User:
         else:
             # Message not found
             # return Response("Message not found!", mimetype="application/json")
-            return tools.JsonResp("Message not found!", 401)
+            return tools.JsonResp("Message not found!", 404)
 
     @staticmethod
-    def delete_message(collection, messageId):
+    def delete_message(collection, messageId, user_id):
         """
         Delete one message by id
         :param collection: db collection
         :param messageId: message id
+        :param user_id: message user_id
         :return: response / feedback
         """
-        return Message.delete(collection, messageId)
+        message = Message.get_message(collection, messageId)
+
+        if message is not None:
+            if message["sender_id"] == ObjectId(user_id):
+                # Message found & message belong to user
+
+                response = Message.delete(collection, messageId)
+                return tools.JsonResp(response.deleted_count, 401)
+
+            else:
+                return tools.JsonResp("Unauthorized access", 401)
+
+        else:
+            # Message not found
+            # return Response("Message not found!", mimetype="application/json")
+            return tools.JsonResp("Message not found!", 404)
 
     @staticmethod
     def update_user(collection, userId, new_data):

@@ -140,12 +140,7 @@ def delete_message(user_id, messageId):
     """
 
     try:
-        response = User.delete_message(collection, messageId)
-        return tools.JsonResp(response.deleted_count, 200)
-        # return {
-        #     "status_code": 200,
-        #     "Amount of deleted message:": json.dumps(response.deleted_count, default=json_util.default)
-        # }
+        return User.delete_message(collection, messageId["messageId"], user_id)
 
     except Exception as e:
         return {"error": str(e)}, 500
