@@ -5,7 +5,7 @@ from src.tools import *
 
 class Message:
 
-    def __init__(self, senderId, receiverId, subject, message):
+    def __init__(self, sender_id, sender_name, receiver_name, subject, message):
         """
         Initialize Message object
         :param senderId (integer): sender ID
@@ -14,8 +14,9 @@ class Message:
         :param message (string): message
         """
         self.defaults = {
-            "sender": senderId,
-            "receiver": receiverId,
+            "sender_id": sender_id,
+            "sender": sender_name,
+            "receiver": receiver_name,
             "subject": subject,
             "message": message,
             "date_created": nowDatetimeUTC(),
@@ -23,12 +24,27 @@ class Message:
         }
 
     @staticmethod
-    def get_all_messages(collection):
+    def get_all_messages(collection, user_id):
         """
-        Query all messages (per user)
-        :return: all messages for a specific user as a JSON file
+        Querying all messages
+        :param collection: db collection
+        :param user_id: user id
+        :return: all messages for a specific user
         """
-        return collection.messages.find()
+
+        return collection.messages.find({"sender_id": ObjectId(user_id)})
+
+    @staticmethod
+    def get_unread_messages(collection, user_id):
+        """
+        Querying all user unread messages
+        :param collection: db collection
+        :param user_id: user id
+        :return: all unread messages for a specific user
+        """
+        return collection.messages.find({"sender_id": ObjectId(user_id)}, {"is_read": False})
+
+
 
     @staticmethod
     def get_message(collection, messageId):
@@ -51,13 +67,13 @@ class Message:
         return collection.messages.delete_one({"_id": ObjectId(messageId)})
 
     @staticmethod
-    def update_message(collection, desired_field):
+    def update_message(collection, desired_fields):
         """
-        :param collection:
-        :param desired_field: key=field to update, value=data to be updated
+        :param collection: db collection
+        :param desired_fields: key=field to update, value=data to be updated
         :return: the original message (before update)
         """
-        return collection.messages.find_one_and_update(desired_field[0], desired_field[1])
+        return collection.messages.find_one_and_update(desired_fields[0], desired_fields[1])
 
     def save(self, collection):
         """

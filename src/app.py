@@ -1,6 +1,7 @@
 import ast
 import os
 
+from bson import json_util
 from flask import Flask
 from flask_pymongo import PyMongo
 from src import auth
@@ -19,8 +20,8 @@ isProduction = False if 'FLASK_ENV' in os.environ and os.environ['FLASK_ENV'] ==
 # usr = os.environ['MONGO_DB_USER']
 # pwd = os.environ['MONGO_DB_PASS']
 
-password = ""
-username = ""
+password = "YOUR_PASSWORD"
+username = "YOUR_USERNAME"
 
 mongo_uri = ""
 if isProduction:
@@ -35,7 +36,6 @@ mongo_client = PyMongo(app)
 collection = mongo_client.db
 
 
-# TODO: Move authorize_user() to __init__.py in auth dir
 def authorize_user(func):
     """
     Extension of code on an existing function.
@@ -45,19 +45,20 @@ def authorize_user(func):
     """
 
     # Authorization
-    def wrap_auth_check(**kwargs):
+    def wrapper(**kwargs):
 
         access_token = request.headers['Authorization'].split()[1]
         token = collection.tokens.find_one({"access_token": access_token})
 
         if token:
-            print("token: ", token)
-            print("token[user_id]: ", token["user_id"])
             return func(token["user_id"], kwargs)
         else:
             return tools.JsonResp("Unauthorized access", 401)
 
-    return wrap_auth_check
+    # Change wrapper name to prevent AssertionError when
+    # I tried to wrap more than one function with the decorator
+    wrapper.__name__ = func.__name__
+    return wrapper
 
 
 #  Home page
@@ -75,23 +76,38 @@ def seed_db():
 
 # Get all unread messages for specific user
 @app.route('/get-all-messages', methods=['GET'])
-def get_all_messages():
+@authorize_user
+def get_all_messages(user_id, args):
     """
-    Read all user messages
-    :return: all messages for a specific user as a JSON file
+    Reading all user messages
+    :param user_id: user id
+    :param args: args
+    :return:  all messages for a specific user
     """
 
     try:
-        return User.read_all_messages(collection)
+        return User.read_all_messages(collection, user_id)
 
     except Exception as e:
         return {"error": str(e)}, 500
 
 
 # Get all unread messages for specific user
-@app.route('/get-all-messages/<is_read>', methods=['GET'])
-def get_all_unread_messages(is_read):
-    pass
+@app.route('/get-unread-messages', methods=['GET'])
+@authorize_user
+def get_unread_messages(user_id, args):
+    """
+    Reading all user unread messages
+    :param user_id: user id
+    :param args: args
+    :return: all unread messages for a specific user
+    """
+
+    try:
+        return User.read_unread_messages(collection, user_id)
+
+    except Exception as e:
+        return {"error": str(e)}, 500
 
 
 # Get only one message by id
@@ -105,14 +121,8 @@ def read_message(user_id, messageId):
     :return: Details of one message
     """
 
-    # TODO:
-    # 1) Get user id -> X
-    # 2) Query the user from db -> X
-    # 2) Check authentication -> X
-    # 3) get message by id -> X
-
     try:
-        return User.read_message(collection, messageId["messageId"])
+        return User.read_message(collection, messageId["messageId"], user_id)
 
     except Exception as e:
         return {"error": str(e)}, 500
@@ -120,15 +130,22 @@ def read_message(user_id, messageId):
 
 # Delete message (as owner or as receiver)
 @app.route('/delete-message/<string:messageId>', methods=['DELETE'])
-def delete_message(messageId):
+@authorize_user
+def delete_message(user_id, messageId):
     """
     Delete one message by id
+    :param user_id: user id
     :param messageId: message id
     :return: response / feedback
     """
 
     try:
-        return User.delete_message(collection, messageId)
+        response = User.delete_message(collection, messageId)
+        return tools.JsonResp(response.deleted_count, 200)
+        # return {
+        #     "status_code": 200,
+        #     "Amount of deleted message:": json.dumps(response.deleted_count, default=json_util.default)
+        # }
 
     except Exception as e:
         return {"error": str(e)}, 500
@@ -136,13 +153,10 @@ def delete_message(messageId):
 
 # Write message
 @app.route('/write-messages', methods=['POST'])
-def write_messages():
-    # 1) Get user id -> query the user from db
-    # 2) Get receiver id
-    # 3) Check authentication
-    # 4) user.send_message(collection)
+@authorize_user
+def write_messages(user_id, args):
     try:
-        return User.send_message(collection)
+        return User.send_message(collection, user_id)
 
     except Exception as e:
         return {"error": str(e)}, 500
@@ -175,17 +189,17 @@ def create_user():
                 }, 409
 
 
-@app.route('/sign-in', methods=['POST'])
+@app.route('/login', methods=['POST'])
 def login():
     try:
         # Get param & create the User object
-        sign_in_details = {"email": request.args['email'].lower(),
-                           "password": request.args['password']}
+        login_details = {"email": request.args['email'].lower(),
+                         "password": request.args['password']}
 
         # Looking for user
-        user_response = collection.users.find_one({"email": request.args['email'].lower()})
+        user_response = collection.users.find_one({"email": login_details['email']})
 
-        if pbkdf2_sha256.verify(sign_in_details["password"], user_response["password"]) and user_response:
+        if pbkdf2_sha256.verify(login_details["password"], user_response["password"]) and user_response:
             """
             Check:
             - that the password in the database is not the old hash
@@ -240,16 +254,6 @@ def logout():
     pass
 
 
-# TODO: Delete?
-def create_update_list(internal_update=None):
-    fields_to_updates = {}
-
-    for key, value in request.args.items():
-        fields_to_updates["key"] = value
-
-    return fields_to_updates
-
-
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port=5000, debug=True)
 
@@ -257,3 +261,4 @@ if __name__ == '__main__':
 # TODO: Grab user/pass from the environment variables (config.cfg file)
 # TODO: Fix methods -> from static to instance
 # TODO: Change method name convention to camelCase
+# TODO: Move authorize_user() to __init__.py in auth dir
