@@ -1,32 +1,58 @@
 import json
+
+from bson import json_util, ObjectId
+
 from src.users.models import User
 from src.messages.models import Message
 
 
 def seed(collection):
-    create_users(collection)
-    create_messages(collection)
+    """
+    Create users() return user id list
+    create_messages() takes that list and insert each id to the correct message object
+    :param collection:
+    :return:
+    """
+    user_id = []
+    user_id = create_users(collection)
+    create_messages(collection, user_id)
 
 
 def create_users(collection):
-    with open('./src/seed/INIT_DATA.json') as f:
-        collections = json.load(f)
-        users = collections["users"]
+    """
+    Seeding users data to users collection
+    :param collection: db collection
+    """
 
+    user_id = []
+    with open('./src/seed/INIT_DATA.json') as f:
+        init_collections = json.load(f)
+        users = init_collections["users"]
+
+    # Create user object for each user in users list and save there id in user_id list
     for user in users:
         user = User(user["first_name"], user["last_name"], user["email"], user["password"])
-        user.save(collection)
+        response = user.save(collection)
+        user_id.append(response.inserted_id)
 
     f.close()
+    return user_id
 
 
-def create_messages(collection):
+def create_messages(collection, user_id):
+    """
+    Seeding messages data to messages collection
+    :param collection: db collection
+    :param user_id: users id's list
+    """
+
     with open('./src/seed/INIT_DATA.json') as f:
-        collections = json.load(f)
-        messages = collections["messages"]
+        init_collections = json.load(f)
+        messages = init_collections["messages"]
 
     for message in messages:
-        message = Message(message["sender"], message["receiver"], message["subject"], message["message"])
+        id_number = user_id.pop()
+        message = Message(id_number, message["sender"], message["receiver"], message["subject"], message["message"])
         message.save(collection)
 
     f.close()
