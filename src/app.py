@@ -13,23 +13,10 @@ app = Flask(__name__)
 
 # mongoDB configuration & initialization
 app.config['MONGO_DBNAME'] = 'messages'
-
-# Determining environment
-isProduction = False if 'FLASK_ENV' in os.environ and os.environ['FLASK_ENV'] == "development" else True
-
-# usr = os.environ['MONGO_DB_USER']
-# pwd = os.environ['MONGO_DB_PASS']
-
-password = "YOUR_PASSWORD"
-username = "YOUR_USERNAME"
-
-mongo_uri = ""
-if isProduction:
-    mongo_uri = f'mongodb+srv://{username}:{password}@cluster0.jryya.mongodb.net/messaging_system?retryWrites=true&w=majority'
-else:
-    mongo_uri = f'mongodb+srv://{username}:{password}@cluster0.jryya.mongodb.net/messaging_system?retryWrites=true&w=majority'
-print("mongo_uri: ", mongo_uri)
-app.config['MONGO_URI'] = mongo_uri
+password = "Mongo1805"
+username = "yariv1052"
+app.config[
+    'MONGO_URI'] = f'mongodb+srv://{username}:{password}@cluster0.jryya.mongodb.net/messaging_system?retryWrites=true&w=majority'
 
 # Create mongoDB client
 mongo_client = PyMongo(app)
@@ -61,131 +48,110 @@ def authorize_user(func):
     return wrapper
 
 
-#  Home page
 @app.route('/')
 def home_page():
-    return "Messaging System - RESTful API!"
+    """
+    Home page
+    :return: message response
+    """
+    return "Messaging System - REST API!"
 
 
-#  Home page
 @app.route('/seed', methods=['POST'])
 def seed_db():
+    """
+    Performs seeding to mongo db
+    :return: message response
+    """
     seed(collection)
     return "SEED"
 
 
-# Get all unread messages for specific user
 @app.route('/get-all-messages', methods=['GET'])
 @authorize_user
 def get_all_messages(user_id, args):
     """
-    Reading all user messages
+    Get from "read_all_messages()" method all user messages
     :param user_id: user id
     :param args: args
-    :return:  all messages for a specific user
+    :return: all messages for a specific user
     """
-
-    try:
-        return User.read_all_messages(collection, user_id)
-
-    except Exception as e:
-        return {"error": str(e)}, 500
+    return User.read_all_messages(collection, user_id)
 
 
-# Get all unread messages for specific user
 @app.route('/get-unread-messages', methods=['GET'])
 @authorize_user
 def get_unread_messages(user_id, args):
     """
-    Reading all user unread messages
+     Get from "read_unread_messages()" method all unread user messages
     :param user_id: user id
     :param args: args
     :return: all unread messages for a specific user
     """
-
-    try:
-        return User.read_unread_messages(collection, user_id)
-
-    except Exception as e:
-        return {"error": str(e)}, 500
+    return User.read_unread_messages(collection, user_id)
 
 
-# Get only one message by id
 @app.route('/read-message/<string:messageId>', methods=['GET'])
 @authorize_user
 def read_message(user_id, messageId):
     """
-    Query message where the `id` field equal messageId
+    Calling to read_message() method to query one and specific message
     :param user_id: user id
     :param messageId: message identification number
     :return: Details of one message
     """
-
-    try:
-        return User.read_message(collection, messageId["messageId"], user_id)
-
-    except Exception as e:
-        return {"error": str(e)}, 500
+    return User.read_message(collection, messageId["messageId"], user_id)
 
 
-# Delete message (as owner or as receiver)
 @app.route('/delete-message/<string:messageId>', methods=['DELETE'])
 @authorize_user
 def delete_message(user_id, messageId):
     """
-    Delete one message by id
+    Calling to delete_message() method to delete one and specific message by id
     :param user_id: user id
     :param messageId: message id
     :return: response / feedback
     """
-
-    try:
-        return User.delete_message(collection, messageId["messageId"], user_id)
-
-    except Exception as e:
-        return {"error": str(e)}, 500
+    return User.delete_message(collection, messageId["messageId"], user_id)
 
 
 # Write message
 @app.route('/write-messages', methods=['POST'])
 @authorize_user
 def write_messages(user_id, args):
-    try:
-        return User.send_message(collection, user_id)
-
-    except Exception as e:
-        return {"error": str(e)}, 500
+    """
+    Calling to send_message() method to writing a message
+    :param user_id:
+    :param args:
+    :return:
+    """
+    return User.send_message(collection, user_id)
 
 
 # User creation
 @app.route('/user', methods=['POST'])
 def create_user():
+    """
+    User creation
+    :return:
+    """
+
     # Get param & create the User object
     user = User(request.args['first_name'],
                 request.args['last_name'],
                 request.args['email'].lower(),
                 request.args['password'])
 
-    # Looking for user
-    user_response = collection.users.find_one({"email": request.args['email'].lower()})
-
-    if tools.validEmail(request.args['email']) and user_response is None:
-
-        try:
-            response = user.save(collection)
-            return tools.JsonResp(response.inserted_id, 200)
-
-        except Exception as e:
-            return {"error": str(e)}, 500
-
-    else:
-        return {"message": "There's already an account with this email address",
-                "error": "email_exists"
-                }, 409
+    return user.create_user(collection)
 
 
 @app.route('/login', methods=['POST'])
 def login():
+    """
+    User login
+    :return: user details
+    """
+
     try:
         # Get param & create the User object
         login_details = {"email": request.args['email'].lower(),
@@ -252,8 +218,12 @@ def logout():
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port=5000, debug=True)
 
-# TODO: Check to handle error returns
-# TODO: Grab user/pass from the environment variables (config.cfg file)
-# TODO: Fix methods -> from static to instance
-# TODO: Change method name convention to camelCase
-# TODO: Move authorize_user() to __init__.py in auth dir
+# TODO: Refactoring:
+# 1: Handle error returns
+# 2: Grab variables from "environment variables" -> (config.cfg file)
+# 3: Fix methods -> from static to instance
+# 4: Change method name convention to camelCase
+# 5: Move authorize_user() decorator to __init__.py -> auth dir
+# 6: Fixing "update_is_read_flag()" method -> User method
+# 7: Fixing "login()" method -> User method
+# 7: Fixing "logout()" method

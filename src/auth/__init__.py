@@ -21,6 +21,7 @@ def token_required(f):
 
     return decorated
 
+
 # TODO: Temporary SECRET_KEY!! -> config.cfg file needed fixing
 SECRET_KEY = 'aQ70AYYoi4'
 
@@ -73,3 +74,24 @@ def refreshAccessToken(refresh_token):
         resp = JsonResp(result, 403)
 
     return resp
+
+
+# def authorize_user(func):
+#     """
+#     Extension of code on an existing function.
+#     The authorize_user decorator performs authentication and then returns to the original function
+#     :param func: Another function
+#     :return: original func(user_id) with user id as arg
+#     """
+#
+#     # Authorization
+#     def wrap_auth_check(**kwargs):
+#         access_token = request.headers['Authorization'].split()[1]
+#         token = collection.tokens.find_one({"access_token": access_token})
+#
+#         if token:
+#             return func(token["user_id"])
+#         else:
+#             return JsonResp("Unauthorized access", 401)
+#
+#     return wrap_auth_check
