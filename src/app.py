@@ -13,8 +13,8 @@ app = Flask(__name__)
 
 # mongoDB configuration & initialization
 app.config['MONGO_DBNAME'] = 'messages'
-password = "Mongo1805"
-username = "yariv1052"
+password = "YOUR_PASSWORD"
+username = "YOUR_USERNAME"
 app.config[
     'MONGO_URI'] = f'mongodb+srv://{username}:{password}@cluster0.jryya.mongodb.net/messaging_system?retryWrites=true&w=majority'
 
