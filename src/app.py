@@ -13,8 +13,10 @@ app = Flask(__name__)
 
 # mongoDB configuration & initialization
 app.config['MONGO_DBNAME'] = 'messages'
-password = "YOUR_PASSWORD"
-username = "YOUR_USERNAME"
+
+password = os.getenv('MONGO_PASS')
+username = os.getenv('MONGO_USER')
+
 app.config[
     'MONGO_URI'] = f'mongodb+srv://{username}:{password}@cluster0.jryya.mongodb.net/messaging_system?retryWrites=true&w=majority'
 
@@ -72,6 +74,7 @@ def seed_db():
 def get_all_messages(user_id, args):
     """
     Get from "read_all_messages()" method all user messages
+    Postman exam: WEB_ROUTE/get-all-messages
     :param user_id: user id
     :param args: args
     :return: all messages for a specific user
@@ -84,6 +87,7 @@ def get_all_messages(user_id, args):
 def get_unread_messages(user_id, args):
     """
      Get from "read_unread_messages()" method all unread user messages
+     Postman exam:WEB_ROUTE/get-unread-messages
     :param user_id: user id
     :param args: args
     :return: all unread messages for a specific user
@@ -96,6 +100,7 @@ def get_unread_messages(user_id, args):
 def read_message(user_id, messageId):
     """
     Calling to read_message() method to query one and specific message
+    Postman exam: WEB_ROUTE/read-message/MESSAGE_ID_FROM_MONGO_DB
     :param user_id: user id
     :param messageId: message identification number
     :return: Details of one message
@@ -108,6 +113,7 @@ def read_message(user_id, messageId):
 def delete_message(user_id, messageId):
     """
     Calling to delete_message() method to delete one and specific message by id
+    Postman exam: WEB_ROUTE/delete-message/MESSAGE_ID_FROM_MONGO_DB
     :param user_id: user id
     :param messageId: message id
     :return: response / feedback
@@ -121,6 +127,7 @@ def delete_message(user_id, messageId):
 def write_messages(user_id, args):
     """
     Calling to send_message() method to writing a message
+    Postman exam: WEB_ROUTE/write-messages?sender=SENDER_FULL_NAME&receiver=RECEIVER_FULL_NAME&subject=SUBJECT&message=MESSAGE
     :param user_id:
     :param args:
     :return:
@@ -133,6 +140,7 @@ def write_messages(user_id, args):
 def create_user():
     """
     User creation
+    Postman exam: WEB_ROUTE/user?first_name=FIRST_NAME&last_name=LAST_NAME&email=VALID_EMAIL&password=PASSWORD
     :return:
     """
 
@@ -149,6 +157,7 @@ def create_user():
 def login():
     """
     User login
+    Postman exam: WEB_ROUTE/seed
     :return: user details
     """
 
@@ -200,6 +209,11 @@ def login():
 
 @app.route('/sign-out', methods=['GET'])
 def logout():
+    """
+    ***NOT WORKING YET***
+    Postman exam: WEB_ROUTE/sign-out
+    :return:
+    """
     # try:
     # TODO: Temporary SECRET_KEY!! -> config.cfg file needed fixing
     # SECRET_KEY = 'aQ70AYYoi4'
