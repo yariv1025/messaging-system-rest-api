@@ -157,7 +157,7 @@ def create_user():
 def login():
     """
     User login
-    Postman exam: WEB_ROUTE/seed
+    Postman exam: WEB_ROUTE/login?email=VALID_EMAIL&password=PASSWORD
     :return: user details
     """
 
