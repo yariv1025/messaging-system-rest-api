@@ -10,6 +10,7 @@ nose = "*"
 pytz = "*"
 python-jose = "*"
 passlib = "*"
+gunicorn = "*"
 
 [dev-packages]
 
