@@ -171,6 +171,9 @@ def login():
         # Looking for user
         user_response = collection.users.find_one({"email": login_details['email']})
 
+        if user_response is None:
+            return tools.JsonResp({"message": "User Not Found"}, 404)
+
         if pbkdf2_sha256.verify(login_details["password"], user_response["password"]) and user_response:
             """
             Check:
