@@ -11,6 +11,11 @@ pytz = "*"
 python-jose = "*"
 passlib = "*"
 gunicorn = "*"
+flask-pymongo = "*"
+bson = "*"
+jose = "*"
+datetime = "*"
+uuid = "*"
 
 [dev-packages]
 
