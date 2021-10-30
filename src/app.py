@@ -1,9 +1,8 @@
-import ast
 import os
 
-from bson import json_util
 from flask import Flask
 from flask_pymongo import PyMongo
+from bson import json_util
 from src import auth
 from src.seed.seeder import seed
 from src.users.models import *
