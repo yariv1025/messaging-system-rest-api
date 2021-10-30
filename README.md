@@ -20,8 +20,9 @@ git clone git@github.com:yariv1025/messaging-system-rest-api.git
 >       * Python
 >           * name: APP
 >           * Script path: "YOURS-PATH"\messaging-system-rest-api\src\app.py
->           * Environment variables: ;FLASK_ENV=development;FLASK_APP=./src/app.py;MONGO_USER="YOURS-USERNAME";MONGO_PASS="YOURS-PASSWORD"
-
+>           * Environment variables: ;FLASK_ENV=development;FLASK_APP=./src/app.py;MONGO_USER="YOURS-USERNAME";MONGO_PASS="YOURS-PASSWORD";MONGO_URI="YOURS_DB_URI"
+  
+*Complete mongo URI should look like: f'mongodb+srv://{username}:{password}{mongo_uri}'
 ###### Attention: You must change MONGO_USER, MONGO_PASS, YOURS-PATH, etc. variables.
 ___
 

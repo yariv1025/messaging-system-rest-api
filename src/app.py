@@ -16,9 +16,9 @@ app.config['MONGO_DBNAME'] = 'messages'
 
 password = os.getenv('MONGO_PASS')
 username = os.getenv('MONGO_USER')
+mongo_uri = os.getenv('DB_URI')
 
-app.config[
-    'MONGO_URI'] = f'mongodb+srv://{username}:{password}@cluster0.jryya.mongodb.net/messaging_system?retryWrites=true&w=majority'
+app.config['MONGO_URI'] = f'mongodb+srv://{username}:{password}{mongo_uri}'
 
 # Create mongoDB client
 mongo_client = PyMongo(app)
