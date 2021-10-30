@@ -3,6 +3,9 @@ import os
 from flask import Flask
 from flask_pymongo import PyMongo
 from bson import json_util
+from bson.py3compat import PY3
+import collections.abc as abc
+from abc import ABC, abstractmethod
 from src import auth
 from src.seed.seeder import seed
 from src.users.models import *

@@ -6,6 +6,7 @@ name = "pypi"
 [packages]
 flask = "*"
 pymongo = {extras = ["srv"], version = "*"}
+bson = "*"
 nose = "*"
 pytz = "*"
 python-jose = "*"
