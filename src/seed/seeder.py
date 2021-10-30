@@ -1,7 +1,5 @@
 import json
 
-from bson import json_util, ObjectId
-
 from src.users.models import User
 from src.messages.models import Message
 
