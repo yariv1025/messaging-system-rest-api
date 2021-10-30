@@ -5,14 +5,13 @@ name = "pypi"
 
 [packages]
 flask = "*"
-pymongo = {extras = ["srv"], version = "3.7.2"}
+pymongo = {extras = ["srv"], version = "*"}
 nose = "*"
 pytz = "*"
 python-jose = "*"
 passlib = "*"
 gunicorn = "*"
 flask-pymongo = "*"
-bson = "0.5.7"
 jose = "*"
 datetime = "*"
 uuid = "*"
