@@ -4,6 +4,7 @@
 > * Python 3.7
 > * MongoDB
 ___
+
 ### Run the app:
 #### 1) Clone the project:
 ```shell
@@ -21,7 +22,11 @@ git clone git@github.com:yariv1025/messaging-system-rest-api.git
 >           * Script path: "YOURS-PATH"\messaging-system-rest-api\src\app.py
 >           * Environment variables: ;FLASK_ENV=development;FLASK_APP=./src/app.py;MONGO_USER="YOURS-USERNAME";MONGO_PASS="YOURS-PASSWORD"
 
-###### Attention: Change MONGO_USER and MONGO_PASS vars
+###### Attention: You must change MONGO_USER, MONGO_PASS, YOURS-PATH, etc. variables.
+___
 
-### Perform calls with Postman:
-* Use the attached PDF file
+### Execute requests using Postman(use the attached PDF file):
+* First, seed your db with the seed route.
+  <br>
+>###### * "Seed" data could be found in "src/seed/INIT_DATA.json".
+  
