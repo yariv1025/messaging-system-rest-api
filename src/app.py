@@ -6,6 +6,9 @@ from bson import json_util
 from bson.py3compat import PY3
 import collections.abc as abc
 from abc import ABC, abstractmethod
+
+from jose import jwt
+
 from src import auth
 from src.seed.seeder import seed
 from src.users.models import *
@@ -80,8 +83,8 @@ def seed_db():
 @authorize_user
 def get_messages(user, user_id):
     """
-    Get from "read_all_messages()" method all user messages
-    Postman exam: WEB_ROUTE/get-all-messages
+    Get all user messages
+    Postman exam: WEB_ROUTE/user/messages/all-messages
     :param user: user instance
     :param user_id: user id
     :return: all messages for a specific user
@@ -93,8 +96,8 @@ def get_messages(user, user_id):
 @authorize_user
 def get_unread_messages(user, user_id):
     """
-     Get from "read_unread_messages()" method all unread user messages
-     Postman exam:WEB_ROUTE/get-unread-messages
+     Get all unread user messages
+     Postman exam: WEB_ROUTE/user/messages/unread
     :param user: user instance
     :param user_id: user id
     :return: all unread messages for a specific user
@@ -106,8 +109,8 @@ def get_unread_messages(user, user_id):
 @authorize_user
 def read_message(user, user_id, messageId):
     """
-    Calling to read_message() method to query one and specific message
-    Postman exam: WEB_ROUTE/read-message/MESSAGE_ID_FROM_MONGO_DB
+    Get specific user message by id
+    Postman exam: WEB_ROUTE/user/messages/MESSAGE_ID_FROM_MONGO_DB
     :param user: user instance
     :param user_id: user id
     :param messageId: message identification number
@@ -120,8 +123,8 @@ def read_message(user, user_id, messageId):
 @authorize_user
 def delete_message(user, user_id, messageId):
     """
-    Calling to delete_message() method to delete one and specific message by id
-    Postman exam: WEB_ROUTE/delete-message/MESSAGE_ID_FROM_MONGO_DB
+    Delete specific message by id
+    Postman exam: WEB_ROUTE/user/messages/delete/MESSAGE_ID_FROM_MONGO_DB
     :param user: user instance
     :param user_id: user id
     :param messageId: message id
@@ -135,8 +138,8 @@ def delete_message(user, user_id, messageId):
 @authorize_user
 def write_messages(user, user_id):
     """
-    Calling to send_message() method to writing a message
-    Postman exam: WEB_ROUTE/write-messages?sender=SENDER_FULL_NAME&receiver=RECEIVER_FULL_NAME&subject=SUBJECT&message=MESSAGE
+    Writing a message
+    Postman exam: WEB_ROUTE/user/messages/write?sender=SENDER_FULL_NAME&receiver=RECEIVER_FULL_NAME&subject=SUBJECT&message=MESSAGE
     :param user: user instance
     :param user_id: user id
     :return: message id
@@ -146,10 +149,10 @@ def write_messages(user, user_id):
 
 # User creation
 @app.route('/user/signup', methods=['POST'])
-def create_user():
+def signup():
     """
-    User creation
-    Postman exam: WEB_ROUTE/user?first_name=FIRST_NAME&last_name=LAST_NAME&email=VALID_EMAIL&password=PASSWORD
+    signup
+    Postman exam: WEB_ROUTE/user/signup?first_name=FIRST_NAME&last_name=LAST_NAME&email=VALID_EMAIL&password=PASSWORD
     :return:
     """
 
@@ -165,62 +168,16 @@ def create_user():
 @app.route('/user/login', methods=['POST'])
 def login():
     """
-    User login
-    Postman exam: WEB_ROUTE/login?email=VALID_EMAIL&password=PASSWORD
+    Login
+    Postman exam: WEB_ROUTE/user/login?email=VALID_EMAIL&password=PASSWORD
     :return: user details
     """
-
-    try:
-        # Get param & create the User object
-        login_details = {"email": request.args['email'].lower(),
-                         "password": request.args['password']}
-
-        # Looking for user
-        user_response = collection.users.find_one({"email": login_details['email']})
-
-        if user_response is None:
-            return tools.JsonResp({"message": "User Not Found"}, 404)
-
-        if pbkdf2_sha256.verify(login_details["password"], user_response["password"]) and user_response:
-            """
-            Check:
-            - that the password in the database is not the old hash
-            - that the password in the database is a correct hash of the password
-            - that the user is exist
-            """
-
-            user_id = json.dumps(user_response['_id'], default=json_util.default)
-
-            access_token = auth.encodeAccessToken(user_id, user_response["email"])
-            refresh_token = auth.encodeRefreshToken(user_id, user_response["email"])
-
-            # TODO: Fix & replace with update method from User class
-            collection.tokens.update_many({"user_id": ObjectId(user_response['_id'])},
-                                          {"$set": {"access_token": access_token,
-                                                    "refresh_token": refresh_token,
-                                                    "last_login": tools.nowDatetimeUTC()
-                                                    }}, upsert=True)
-
-            resp = tools.JsonResp({
-                "id": user_response["_id"],
-                "email": user_response["email"],
-                "first_name": user_response["first_name"],
-                "last_name": user_response["last_name"],
-                "access_token": access_token,
-                "refresh_token": refresh_token
-            }, 200)
-
-            return resp
-
-        else:
-            return tools.JsonResp({"message": "Invalid user credentials"}, 403)
-
-    except Exception as e:
-        return {"error": str(e)}, 500
+    return User.login(collection)
 
 
-@app.route('/user/signout', methods=['GET'])
-def logout():
+@app.route('/user/logout', methods=['GET'])
+@authorize_user
+def logout(user, user_id):
     """
     ***NOT WORKING YET***
     Postman exam: WEB_ROUTE/sign-out
@@ -238,14 +195,37 @@ def logout():
 
     # except Exception as e:
     #     return {"error": str(e)}, 500
-    pass
+
+    try:
+        SECRET_KEY = 'aQ70AYYoi4'
+        print("SECRET_KEY: ", SECRET_KEY)
+
+        access_token = request.headers['Authorization'].split()[1]
+        print("access_token: ", access_token)
+
+        token_data = jwt.decode(access_token, SECRET_KEY)
+        print("token_data: ", token_data)
+
+        resp = collection.tokens.update({"id": token_data["user_id"]}, {'$set': {"refresh_token": ""}},upsert=True)
+
+        print("resp: ",resp)
+        exit(0)
+        # Note: At some point I need to implement Token Revoking/Blacklisting
+        # General info here: https://flask-jwt-extended.readthedocs.io/en/latest/blacklist_and_token_revoking.html
+
+        resp = tools.JsonResp({"message": "User logged out"}, 200)
+        print("resp: ", resp)
+        return resp
+
+    except Exception as e:
+        return {"error": str(e)}, 500
 
 
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port=5000, debug=True)
 
 # TODO: Refactoring:
-# 1: Handle error returns
+# 1: Fix logout function!
 # 2: Grab variables from "environment variables" -> (config.cfg file)
 # 4: Change method name convention to camelCase
 # 5: Move authorize_user() decorator to __init__.py -> auth dir
