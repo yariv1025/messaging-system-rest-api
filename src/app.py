@@ -42,7 +42,12 @@ def authorize_user(func):
         token = collection.tokens.find_one({"access_token": access_token})
 
         if token:
-            return func(token["user_id"], kwargs)
+            user_schema = collection.users.find_one(token["user_id"])
+            user = User.get_user_instance(user_schema)
+            if kwargs:
+                return func(user, token["user_id"], kwargs)
+            return func(user, token["user_id"])
+
         else:
             return tools.JsonResp("Unauthorized access", 401)
 
@@ -71,74 +76,76 @@ def seed_db():
     return "SEED"
 
 
-@app.route('/get-all-messages', methods=['GET'])
+@app.route('/user/messages/all-messages', methods=['GET'])
 @authorize_user
-def get_all_messages(user_id, args):
+def get_messages(user, user_id):
     """
     Get from "read_all_messages()" method all user messages
     Postman exam: WEB_ROUTE/get-all-messages
+    :param user: user instance
     :param user_id: user id
-    :param args: args
     :return: all messages for a specific user
     """
-    return User.read_all_messages(collection, user_id)
+    return user.read_messages(collection, user_id, True)
 
 
-@app.route('/get-unread-messages', methods=['GET'])
+@app.route('/user/messages/unread', methods=['GET'])
 @authorize_user
-def get_unread_messages(user_id, args):
+def get_unread_messages(user, user_id):
     """
      Get from "read_unread_messages()" method all unread user messages
      Postman exam:WEB_ROUTE/get-unread-messages
+    :param user: user instance
     :param user_id: user id
-    :param args: args
     :return: all unread messages for a specific user
     """
-    return User.read_unread_messages(collection, user_id)
+    return user.read_messages(collection, user_id, False)
 
 
-@app.route('/read-message/<string:messageId>', methods=['GET'])
+@app.route('/user/messages/<string:messageId>', methods=['GET'])
 @authorize_user
-def read_message(user_id, messageId):
+def read_message(user, user_id, messageId):
     """
     Calling to read_message() method to query one and specific message
     Postman exam: WEB_ROUTE/read-message/MESSAGE_ID_FROM_MONGO_DB
+    :param user: user instance
     :param user_id: user id
     :param messageId: message identification number
     :return: Details of one message
     """
-    return User.read_message(collection, messageId["messageId"], user_id)
+    return user.read_message(collection, messageId["messageId"], user_id)
 
 
-@app.route('/delete-message/<string:messageId>', methods=['DELETE'])
+@app.route('/user/messages/delete/<string:messageId>', methods=['DELETE'])
 @authorize_user
-def delete_message(user_id, messageId):
+def delete_message(user, user_id, messageId):
     """
     Calling to delete_message() method to delete one and specific message by id
     Postman exam: WEB_ROUTE/delete-message/MESSAGE_ID_FROM_MONGO_DB
+    :param user: user instance
     :param user_id: user id
     :param messageId: message id
     :return: response / feedback
     """
-    return User.delete_message(collection, messageId["messageId"], user_id)
+    return user.delete_message(collection, messageId["messageId"], user_id)
 
 
 # Write message
-@app.route('/write-messages', methods=['POST'])
+@app.route('/user/messages/write', methods=['POST'])
 @authorize_user
-def write_messages(user_id, args):
+def write_messages(user, user_id):
     """
     Calling to send_message() method to writing a message
     Postman exam: WEB_ROUTE/write-messages?sender=SENDER_FULL_NAME&receiver=RECEIVER_FULL_NAME&subject=SUBJECT&message=MESSAGE
-    :param user_id:
-    :param args:
-    :return:
+    :param user: user instance
+    :param user_id: user id
+    :return: message id
     """
-    return User.send_message(collection, user_id)
+    return user.send_message(collection, user_id)
 
 
 # User creation
-@app.route('/user', methods=['POST'])
+@app.route('/user/signup', methods=['POST'])
 def create_user():
     """
     User creation
@@ -155,7 +162,7 @@ def create_user():
     return user.create_user(collection)
 
 
-@app.route('/login', methods=['POST'])
+@app.route('/user/login', methods=['POST'])
 def login():
     """
     User login
@@ -212,7 +219,7 @@ def login():
         return {"error": str(e)}, 500
 
 
-@app.route('/sign-out', methods=['GET'])
+@app.route('/user/signout', methods=['GET'])
 def logout():
     """
     ***NOT WORKING YET***
@@ -240,9 +247,7 @@ if __name__ == '__main__':
 # TODO: Refactoring:
 # 1: Handle error returns
 # 2: Grab variables from "environment variables" -> (config.cfg file)
-# 3: Fix methods -> from static to instance
 # 4: Change method name convention to camelCase
 # 5: Move authorize_user() decorator to __init__.py -> auth dir
-# 6: Fixing "update_is_read_flag()" method -> User method
 # 7: Fixing "login()" method -> User method
 # 7: Fixing "logout()" method

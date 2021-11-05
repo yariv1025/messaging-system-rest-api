@@ -27,8 +27,7 @@ class User:
             "last_login": tools.nowDatetimeUTC()
         }
 
-    @staticmethod
-    def send_message(collection, sender_id):
+    def send_message(self, collection, sender_id):
         message = Message(sender_id,
                           request.args['sender'],
                           request.args['receiver'],
@@ -43,89 +42,53 @@ class User:
         except Exception as e:
             return {"error": str(e)}, 500
 
-    @staticmethod
-    def read_all_messages(collection, user_id):
+    def read_messages(self, collection, user_id, all_messages):
         """
-        Reading all user messages
+        Reading all user messages || Unread user messages
         :param collection: db collection
         :param user_id: user id
+        :param all_messages: flag
         :return: All user messages
         """
-
         try:
-            messages = Message.get_all_messages(collection, user_id)
-            # Update is_read flag
-            response = []
-            for message in messages:
-                fields = {"_id": ObjectId(message["_id"])}, {"$set": {"is_read": True}}
-                response.append(Message.update_message(collection, fields))
+            messages = []
+            if all_messages:
+                response = Message.get_all_messages(collection, user_id)
+                messages = [message for message in response]
+            else:
+                # Unread messages only
+                response = Message.get_unread_messages(collection, user_id)
+                messages = [message for message in response]
 
-            # return tools.JsonResp([message for message in messages], 200)
-            return tools.JsonResp(response, 200)
+            if messages:
+                response = self.update_is_read_flag(collection, messages)
+                return tools.JsonResp(response, 200)
+
+            return tools.JsonResp([], 404)
 
         except Exception as e:
             return {"error": str(e)}, 500
 
-    @staticmethod
-    def read_unread_messages(collection, user_id):
+    def read_message(self, collection, messageId, user_id):
         """
-        Reading all unread user messages
-        :param collection: db collection
-        :param user_id: user id
-        :return: All user unread messages
-        """
-
-        try:
-            messages = Message.get_unread_messages(collection, user_id)
-            # Update is_read flag
-            response = []
-            for message in messages:
-                is_read = {"_id": ObjectId(message["_id"])}, {"$set": {"is_read": True}}
-                response.append(Message.update_message(collection, is_read))
-
-            return tools.JsonResp(response, 200)
-
-        except Exception as e:
-            return {"error": str(e)}, 500
-
-    @staticmethod
-    def read_message(collection, messageId, user_id):
-        """
-        Find and return message
+        Find and return single message
         :param collection: db collection
         :param messageId: message id
         :param user_id: user id
         :return: one message
         """
         try:
-            message = Message.get_message(collection, messageId)
-
-            if message is not None:
-                if message["sender_id"] == ObjectId(user_id):
-                    # Message found & message belong to user
-
-                    if message["is_read"] is False:
-                        # Update is_read flag
-                        is_read = {"_id": ObjectId(messageId)}, {"$set": {"is_read": True}}
-                        response = Message.update_message(collection, is_read)
-                        return tools.JsonResp(response, 200)
-
-                    # Returning the message without updating
-                    return tools.JsonResp(message, 200)
-
-                else:
-                    # Message dose not belong to user
-                    return tools.JsonResp("Unauthorized access", 401)
+            message = [Message.get_message(collection, messageId)]
+            if message is not None and message[0]["sender_id"] == ObjectId(user_id):
+                # Message found & message belong to user
+                self.update_is_read_flag(collection, message)
+                return tools.JsonResp(message[0], 200)
+            return tools.JsonResp("Forbidden", 403)
 
         except Exception as e:
             return {"error": str(e)}, 500
 
-        else:
-            # Message not found
-            return tools.JsonResp("Message not found!", 404)
-
-    @staticmethod
-    def delete_message(collection, messageId, user_id):
+    def delete_message(self, collection, messageId, user_id):
         """
         Delete one message by id
         :param collection: db collection
@@ -137,19 +100,13 @@ class User:
         try:
             message = Message.get_message(collection, messageId)
 
-            if message is not None:
-                if message["sender_id"] == ObjectId(user_id):
-                    # Message found & message belong to user
-
-                    response = Message.delete(collection, messageId)
-                    return tools.JsonResp(response.deleted_count, 401)
-
-                else:
-                    return tools.JsonResp("Unauthorized access", 401)
+            if message is not None and message["sender_id"] == ObjectId(user_id):
+                # Message found & message belong to user
+                response = Message.delete(collection, messageId)
+                return tools.JsonResp(response.deleted_count, 200)
 
             else:
                 # Message not found
-                # return Response("Message not found!", mimetype="application/json")
                 return tools.JsonResp("Message not found!", 404)
 
         except Exception as e:
@@ -162,7 +119,7 @@ class User:
         :param collection: db collection
         :param userId: Mongo id
         :param new_data: New data
-        :return:
+        :return: db response
         """
 
         try:
@@ -186,29 +143,37 @@ class User:
         :return:
         """
         try:
-            return collection.users.insert_one(self.get_user())
+            return collection.users.insert_one(self.get_user_as_json())
 
         except Exception as e:
             return {"error": str(e)}, 500
 
-    def get_user(self):
+    def get_user_as_json(self):
         """
         :return: user instance
         """
         return self.defaults.copy()
 
     @staticmethod
-    def update_is_read_flag(collection, messageId):
+    def get_user_instance(user_schema):
+        return User(user_schema["first_name"],
+                    user_schema["last_name"],
+                    user_schema["email"],
+                    user_schema["password"])
+
+    def update_is_read_flag(self, collection, messages):
         """
+        Update is_read flag
         :param collection: db collection
-        :param messageId: message id
-        :return: mongo response
+        :param messages: user messages
+        :return: db response
         """
-        # # Update is_read flag
-        # is_read = {"_id": ObjectId(messageId)}, {"$set": {"is_read": True}}
-        # response = Message.update_message(collection, is_read)
-        # return tools.JsonResp(response, 200)
-        pass
+        response = []
+        for message in messages:
+            if not message["is_read"]:
+                is_read = {"_id": ObjectId(message["_id"])}, {"$set": {"is_read": True}}
+                response.append(Message.update_message(collection, is_read))
+        return messages
 
     def create_user(self, collection):
         """

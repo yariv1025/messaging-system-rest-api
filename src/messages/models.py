@@ -23,6 +23,19 @@ class Message:
             "is_read": False
         }
 
+    def save(self, collection):
+        """
+        Save message to db
+        :param collection: db collection
+        """
+        return collection.messages.insert_one(self.to_json())
+
+    def to_json(self):
+        """
+        :return: JSON representation
+        """
+        return self.defaults.copy()
+
     @staticmethod
     def get_all_messages(collection, user_id):
         """
@@ -37,14 +50,13 @@ class Message:
     @staticmethod
     def get_unread_messages(collection, user_id):
         """
-        Querying all user unread messages
+        Querying all user unread messages from db
         :param collection: db collection
         :param user_id: user id
         :return: all unread messages for a specific user
         """
-        return collection.messages.find({"sender_id": ObjectId(user_id)}, {"is_read": False})
-
-
+        # return collection.messages.find({"sender_id": ObjectId(user_id)}, {"is_read": False})
+        return collection.messages.find({"sender_id": ObjectId(user_id), "is_read": False})
 
     @staticmethod
     def get_message(collection, messageId):
@@ -74,16 +86,3 @@ class Message:
         :return: the original message (before update)
         """
         return collection.messages.find_one_and_update(desired_fields[0], desired_fields[1])
-
-    def save(self, collection):
-        """
-        Save message to db
-        :param collection: db collection
-        """
-        return collection.messages.insert_one(self.to_json())
-
-    def to_json(self):
-        """
-        :return: JSON representation
-        """
-        return self.defaults.copy()
