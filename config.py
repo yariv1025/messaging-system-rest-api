@@ -5,7 +5,7 @@ class Config(object):
     DEBUG = False
     TESTING = False
 
-    SECRET_KEY = 'aQ70AYYoi4'
+    SECRET_KEY = os.getenv('SECRET_KEY')
     MONGO_DBNAME = "massaging_system"
     MONGO_PASS = os.getenv('MONGO_PASS')
     MONGO_USER = os.getenv('MONGO_USER')
