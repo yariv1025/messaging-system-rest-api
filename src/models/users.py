@@ -76,7 +76,7 @@ class User:
         """
         try:
             message = [Message.get_message(collection, messageId)]
-            if message is not None and message[0]["sender_id"] == ObjectId(user_id):
+            if message[0] is not None and message[0]["sender_id"] == ObjectId(user_id):
                 # Message found & message belong to user
                 self.update_is_read_flag(collection, message)
                 return tools.JsonResp(message[0], 200)
