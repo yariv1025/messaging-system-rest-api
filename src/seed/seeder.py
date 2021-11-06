@@ -1,7 +1,7 @@
 import json
 
-from src.users.models import User
-from src.messages.models import Message
+from src.models.users import User
+from src.models.messages import Message
 
 
 def seed(collection):

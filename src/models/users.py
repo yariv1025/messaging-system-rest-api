@@ -3,9 +3,8 @@ import json
 from bson import ObjectId, json_util
 from flask import Response, request
 from passlib.hash import pbkdf2_sha256
-
 from src import tools, auth
-from src.messages.models import Message
+from src.models.messages import Message
 
 
 class User:
