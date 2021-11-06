@@ -212,7 +212,6 @@ class User:
                     access_token = auth.encodeAccessToken(user_id, user_response["email"])
                     refresh_token = auth.encodeRefreshToken(user_id, user_response["email"])
 
-                    # TODO: Fix & replace with update method from User class
                     collection.tokens.update_many({"user_id": ObjectId(user_response['_id'])},
                                                   {"$set": {"access_token": access_token,
                                                             "refresh_token": refresh_token,

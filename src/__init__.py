@@ -1,29 +1,29 @@
-# import os
-# from flask import Flask
-# from flask_pymongo import PyMongo
-# from src.tools import JsonResp
-#
-# # Import Routes
-# from src.Temporary.routes import user_blueprint
-# from src.messages.routes import message_blueprint
-#
-#
-# def create_app():
-#     """
-#     Create messaging system app
-#     :return app
-#     """
-#
-#     # Flask Config
-#     app = Flask(__name__)
-#     app.app_context().push()
-#
-#     # Register Blueprints
-#     app.register_blueprint(user_blueprint, url_prefix="/user")
-#     app.register_blueprint(message_blueprint, url_prefix="/message")
-#
-#     @app.route("/")
-#     def home_page():
-#         return JsonResp({"status": "Messaging System Online - RESTful API!"}, 200)
-#
-#     return app
+from flask import Flask, Blueprint
+from bson import json_util
+from bson.py3compat import PY3
+import collections.abc as abc
+from abc import ABC, abstractmethod
+from src import routes
+from src.database.db import DataBase as db
+
+
+def create_app():
+    # app initialization
+    app = Flask(__name__)
+
+    if app.config["ENV"] == "production":
+        app.config.from_object("config.ProductionConfig")
+    elif app.config["ENV"] == "testing":
+        app.config.from_object("config.TestingConfig")
+    else:
+        app.config.from_object("config.DevelopmentConfig")
+
+    # db initialization
+    collection = db.get_instance(app)
+
+    for blueprint in vars(routes).values():
+        if isinstance(blueprint, Blueprint):
+            app.register_blueprint(blueprint)
+
+    return app, collection
+
