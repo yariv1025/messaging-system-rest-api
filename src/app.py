@@ -3,8 +3,8 @@ from bson import json_util
 from bson.py3compat import PY3
 import collections.abc as abc
 from abc import ABC, abstractmethod
+from src import routes
 from src.database.db import DataBase as db
-import routes
 
 
 def create_app():
