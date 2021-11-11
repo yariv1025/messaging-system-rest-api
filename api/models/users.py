@@ -3,8 +3,8 @@ import json
 from bson import ObjectId, json_util
 from flask import Response, request
 from passlib.hash import pbkdf2_sha256
-from src import tools, auth
-from src.models.messages import Message
+from api import tools, auth
+from api.models.messages import Message
 
 
 class User:
@@ -27,12 +27,17 @@ class User:
         }
 
     def send_message(self, collection, sender_id):
+        """
+        Sending message to user
+        :param sender_id: sender id
+        :param collection: db collection
+        :return: response / feedback
+        """
         message = Message(sender_id,
                           request.args['sender'],
                           request.args['receiver'],
                           request.args['subject'],
                           request.args['message'])
-
         try:
             # Insert message into DB
             response = message.save(collection)
@@ -41,20 +46,19 @@ class User:
         except Exception as e:
             return {"error": str(e)}, 500
 
-    def read_messages(self, collection, user_id, all_messages):
+    def read_messages(self, collection, user_id, only_unread):
         """
         Reading all user messages || Unread user messages
         :param collection: db collection
         :param user_id: user id
-        :param all_messages: flag
+        :param only_unread: flag
         :return: All user messages
         """
         try:
-            if all_messages:
-                messages = Message.get_all_messages(collection, user_id)
-            else:
-                # Unread messages only
+            if only_unread:
                 messages = Message.get_unread_messages(collection, user_id)
+            else:
+                messages = Message.get_all_messages(collection, user_id)
 
             if messages:
                 messages = [message for message in messages]
@@ -132,8 +136,7 @@ class User:
             if not is_exists:
                 response = self.save_user(collection)
                 return tools.JsonResp(response.inserted_id, 200)
-            else:
-                return is_exists
+            return is_exists
 
         except Exception as e:
             return {"error": str(e)}, 500

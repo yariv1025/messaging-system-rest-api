@@ -1,3 +1,5 @@
+import config
+
 from flask import Flask, Blueprint
 from bson import json_util
 from bson.py3compat import PY3
@@ -19,11 +21,10 @@ def create_app():
         app.config.from_object("config.DevelopmentConfig")
 
     # db initialization
-    collection = db.get_instance(app)
+    config.collection = db.get_instance(app)
 
     for blueprint in vars(routes).values():
         if isinstance(blueprint, Blueprint):
             app.register_blueprint(blueprint)
 
-    return app, collection
-
+    return app

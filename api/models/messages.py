@@ -24,7 +24,7 @@ class Message:
 
     def save(self, collection):
         """
-        Save message to db
+        Saving single message into db
         :param collection: db collection
         """
         return collection.messages.insert_one(self.to_json())
@@ -38,7 +38,7 @@ class Message:
     @staticmethod
     def get_all_messages(collection, user_id):
         """
-        Querying all messages
+        Querying all user messages
         :param collection: db collection
         :param user_id: user id
         :return: all messages for a specific user
@@ -54,24 +54,22 @@ class Message:
         :param user_id: user id
         :return: all unread messages for a specific user
         """
-        # return collection.messages.find({"sender_id": ObjectId(user_id)}, {"is_read": False})
         return collection.messages.find({"sender_id": ObjectId(user_id), "is_read": False})
 
     @staticmethod
     def get_message(collection, messageId):
         """
-        Query message where the `id` field equal to messageId
+        Query message by messageId
         :param collection: db collection
         :param messageId: message identification number
         :return: Details of one message
         """
-
         return collection.messages.find_one({"_id": ObjectId(messageId)})
 
     @staticmethod
     def delete(collection, messageId):
         """
-        Delete desired message
+        Deleting message by messageId
         :param collection: db collection
         :param messageId: message id
         """

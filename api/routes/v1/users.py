@@ -1,43 +1,16 @@
 import config
+
+from api.auth import authorize_user
 from flask import Blueprint, request
 from jose import jwt
-from src import tools
-from src.seed.seeder import seed
-from src.models.users import User
-from src.database.db import DataBase as db
+from api import tools
+from api.seed.seeder import seed
+from api.models.users import User
+from api.database.db import DataBase as db, DataBase
 
 user_blueprint = Blueprint("user", __name__)
-conf = config.Config()
-
-
-def authorize_user(func):
-    """
-    Extension of code on an existing function.
-    The authorize_user decorator performs authentication and then returns to the original function
-    :param func: Another function
-    :return: original func(user_id) with user id as arg
-    """
-
-    # Authorization
-    def wrapper(**kwargs):
-        collection = db.get_instance()
-        access_token = request.headers['Authorization'].split()[1]
-        token = collection.tokens.find_one({"access_token": access_token})
-
-        if token:
-            user_schema = collection.users.find_one(token["user_id"])
-            user = User.get_user_instance(user_schema)
-            if kwargs:
-                return func(user, token["user_id"], kwargs)
-            return func(user, token["user_id"])
-
-        else:
-            return tools.JsonResp("Unauthorized access", 401)
-
-    # Change wrapper name to prevent AssertionError when
-    # I tried to wrap more than one function with the decorator
-    wrapper.__name__ = func.__name__
-    return wrapper
+conf = config.exportConfig.SECRET_KEY
+collection = DataBase.get_instance()
 
 
 @user_blueprint.route('/')
@@ -55,40 +28,26 @@ def seed_db():
     Performs seeding to mongo db
     :return: message response
     """
-    collection = db.get_instance()
-    seed(collection)
+
+    seed()
     return "SEED"
 
 
-@user_blueprint.route('/user/messages/all-messages', methods=['GET'])
+@user_blueprint.route('/messages', methods=['GET'])
 @authorize_user
-def get_messages(user, user_id):
+def get_messages(user, user_id, only_unread=True):
     """
     Get all user messages
     Postman exam: WEB_ROUTE/user/messages/all-messages
+    :param only_unread: query selection of only unread messages
     :param user: user instance
     :param user_id: user id
     :return: all messages for a specific user
     """
-    collection = db.get_instance()
-    return user.read_messages(collection, user_id, True)
+    return user.read_messages(collection, user_id, only_unread)
 
 
-@user_blueprint.route('/user/messages/unread', methods=['GET'])
-@authorize_user
-def get_unread_messages(user, user_id):
-    """
-     Get all unread user messages
-     Postman exam: WEB_ROUTE/user/messages/unread
-    :param user: user instance
-    :param user_id: user id
-    :return: all unread messages for a specific user
-    """
-    collection = db.get_instance()
-    return user.read_messages(collection, user_id, False)
-
-
-@user_blueprint.route('/user/messages/<string:messageId>', methods=['GET'])
+@user_blueprint.route('/messages/<string:messageId>', methods=['GET'])
 @authorize_user
 def read_message(user, user_id, messageId):
     """
@@ -99,11 +58,10 @@ def read_message(user, user_id, messageId):
     :param messageId: message identification number
     :return: Details of one message
     """
-    collection = db.get_instance()
     return user.read_message(collection, messageId["messageId"], user_id)
 
 
-@user_blueprint.route('/user/messages/delete/<string:messageId>', methods=['DELETE'])
+@user_blueprint.route('/messages/<string:messageId>', methods=['DELETE'])
 @authorize_user
 def delete_message(user, user_id, messageId):
     """
@@ -114,13 +72,12 @@ def delete_message(user, user_id, messageId):
     :param messageId: message id
     :return: response / feedback
     """
-    collection = db.get_instance()
     return user.delete_message(collection, messageId["messageId"], user_id)
 
 
-@user_blueprint.route('/user/messages/write', methods=['POST'])
+@user_blueprint.route('/messages', methods=['POST'])
 @authorize_user
-def write_messages(user, user_id):
+def write_message(user, user_id):
     """
     Writing a message
     Postman exam: WEB_ROUTE/user/messages/write?sender=SENDER_FULL_NAME&receiver=RECEIVER_FULL_NAME&subject=SUBJECT&message=MESSAGE
@@ -128,11 +85,11 @@ def write_messages(user, user_id):
     :param user_id: user id
     :return: message id
     """
-    collection = db.get_instance()
-    return user.send_message(collection, user_id)
+    # return user.send_message(collection, user_id)
+    return User.send_message(collection, user_id)
 
 
-@user_blueprint.route('/user/signup', methods=['POST'])
+@user_blueprint.route('/user', methods=['POST'])
 def signup():
     """
     signup
@@ -145,22 +102,20 @@ def signup():
                 request.args['last_name'],
                 request.args['email'].lower(),
                 request.args['password'])
-    collection = db.get_instance()
     return user.create_user(collection)
 
 
-@user_blueprint.route('/user/login', methods=['POST'])
+@user_blueprint.route('/auth/login', methods=['POST'])
 def login():
     """
     Login
     Postman exam: WEB_ROUTE/user/login?email=VALID_EMAIL&password=PASSWORD
     :return: user details
     """
-    collection = db.get_instance()
     return User.login(collection)
 
 
-@user_blueprint.route('/user/logout', methods=['GET'])
+@user_blueprint.route('/auth/logout', methods=['GET'])
 @authorize_user
 def logout(user, user_id):
     """
@@ -169,7 +124,6 @@ def logout(user, user_id):
     """
 
     try:
-        collection = db.get_instance()
         print("SECRET_KEY: ", conf.SECRET_KEY)
 
         access_token = request.headers['Authorization'].split()[1]
@@ -178,7 +132,8 @@ def logout(user, user_id):
         token_data = jwt.decode(access_token, conf.SECRET_KEY)
         print("token_data: ", token_data)
 
-        resp = collection.tokens.update({"id": token_data["user_id"]}, {'$set': {"refresh_token": ""}}, upsert=True)
+        resp = conf.collection.tokens.update({"id": token_data["user_id"]}, {'$set': {"refresh_token": ""}},
+                                             upsert=True)
 
         print("resp: ", resp)
         exit(0)
@@ -191,3 +146,6 @@ def logout(user, user_id):
 
     except Exception as e:
         return {"error": str(e)}, 500
+
+# TODO: fix authentication: activate refresh token
+# TODO: fix logout function

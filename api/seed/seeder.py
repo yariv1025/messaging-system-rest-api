@@ -8,12 +8,13 @@ def seed(collection):
     """
     Create users() return user id list
     create_messages() takes that list and insert each id to the correct message object
-    :param collection:
+    :param collection: db collection
     :return:
     """
     user_id = []
     user_id = create_users(collection)
     create_messages(collection, user_id)
+    return {"status": "success"}
 
 
 def create_users(collection):
@@ -37,7 +38,7 @@ def create_users(collection):
         f.close()
         return user_id
 
-    except (IOError, EOFError) as e:
+    except (IOError, EOFError, FileNotFoundError) as e:
         print("Error. {}".format(e.args[-1]))
 
 
