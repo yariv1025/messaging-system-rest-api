@@ -4,15 +4,46 @@ import config
 from flask import request, Blueprint
 from functools import wraps
 from jose import jwt
-from src.database.db import DataBase as db
-from src.tools import JsonResp
+from api import tools
+from api.database.db import DataBase as db
+from api.models.users import User
+from api.tools import JsonResp
 
 auth_blueprint = Blueprint("auth", __name__)
 conf = config.Config()
 
+def authorize_user(func):
+    """
+    Extension of code on an existing function.
+    The authorize_user decorator performs authentication and then returns to the original function
+    :param func: Another function
+    :return: original func(user_id) with user id as arg
+    """
 
-# Auth Decorator
+    # Authorization
+    def wrapper(**kwargs):
+        collection = db.get_instance()
+        access_token = request.headers['Authorization'].split()[1]
+        token = collection.tokens.find_one({"access_token": access_token})
+
+        if token:
+            user_schema = collection.users.find_one(token["user_id"])
+            user = User.get_user_instance(user_schema)
+            if kwargs:
+                return func(user, token["user_id"], kwargs)
+            return func(user, token["user_id"])
+
+        else:
+            return tools.JsonResp("Unauthorized access", 401)
+
+    # Change wrapper name to prevent AssertionError when
+    # I tried to wrap more than one function with the decorator
+    wrapper.__name__ = func.__name__
+    return wrapper
+
+
 def token_required(f):
+    # Auth Decorator
     @wraps(f)
     def decorated(*args, **kwargs):
         access_token = request.headers.get('AccessToken')

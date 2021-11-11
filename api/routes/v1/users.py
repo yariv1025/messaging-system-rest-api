@@ -85,8 +85,7 @@ def write_message(user, user_id):
     :param user_id: user id
     :return: message id
     """
-    # return user.send_message(collection, user_id)
-    return User.send_message(collection, user_id)
+    return user.send_message(collection, user_id)
 
 
 @user_blueprint.route('/user', methods=['POST'])
