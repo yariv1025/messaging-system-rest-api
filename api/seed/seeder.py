@@ -1,8 +1,8 @@
 import json
 
 from api.database.db import DataBase
-from api.models.users import User
-from api.models.messages import Message
+from api.models.user import User
+from api.models.message import Message
 
 collection = DataBase.get_instance()
 

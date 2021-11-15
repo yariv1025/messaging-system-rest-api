@@ -5,10 +5,9 @@ from flask import Blueprint, request
 from jose import jwt
 from api import tools
 from api.seed.seeder import seed
-from api.models.users import User
-from api.database.db import DataBase as db, DataBase
-
-from api.controllers import users
+from api.models.user import User
+from api.database.db import DataBase
+from api.controllers import user as user_controller
 
 user_blueprint = Blueprint("user", __name__)
 conf = config.exportConfig.SECRET_KEY
@@ -46,7 +45,7 @@ def get_messages(user, user_id):
     :return: all messages for a specific user
     """
     only_unread = request.args.get('only_unread')
-    return users.read_all(collection, user, user_id, only_unread)
+    return user_controller.read_all(collection, user, user_id, only_unread)
 
 
 @user_blueprint.route('/messages/<string:messageId>', methods=['GET'])
@@ -60,7 +59,7 @@ def get_message(user, user_id, messageId):
     :param messageId: message identification number
     :return: Details of one message
     """
-    return users.read(collection, user, messageId["messageId"], user_id)
+    return user_controller.read(collection, user, messageId["messageId"], user_id)
 
 
 @user_blueprint.route('/messages/<string:messageId>', methods=['DELETE'])
@@ -68,14 +67,13 @@ def get_message(user, user_id, messageId):
 def delete_message(user, user_id, messageId):
     """
     Delete specific message by id
-    Postman exam: WEB_ROUTE/user/messages/delete/MESSAGE_ID_FROM_MONGO_DB
+    Postman exam: WEB_ROUTE/messages/MESSAGE_ID_FROM_MONGO_DB
     :param user: user instance
     :param user_id: user id
     :param messageId: message id
     :return: response / feedback
     """
-    return users.delete(collection, user, messageId["messageId"], user_id)
-    # return users.delete(collection, user, messageId["messageId"], user_id)
+    return user_controller.delete(collection, user, messageId["messageId"], user_id)
 
 
 @user_blueprint.route('/messages', methods=['POST'])
@@ -83,46 +81,39 @@ def delete_message(user, user_id, messageId):
 def post_message(user, user_id):
     """
     Post message
-    Postman exam: WEB_ROUTE/messages/write?sender=SENDER_FULL_NAME&receiver=RECEIVER_FULL_NAME&subject=SUBJECT&message=MESSAGE
+    Postman exam: WEB_ROUTE/messages?sender=SENDER_FULL_NAME&receiver=RECEIVER_FULL_NAME&subject=SUBJECT&message=MESSAGE
     :param user: user instance
     :param user_id: user id
     :return: message id
     """
-    return users.write(collection, user, user_id)
+    return user_controller.write(collection, user, user_id)
 
 
 @user_blueprint.route('/user', methods=['POST'])
 def signup():
     """
     signup
-    Postman exam: WEB_ROUTE/user/signup?first_name=FIRST_NAME&last_name=LAST_NAME&email=VALID_EMAIL&password=PASSWORD
+    Postman exam: WEB_ROUTE/user?first_name=FIRST_NAME&last_name=LAST_NAME&email=VALID_EMAIL&password=PASSWORD
     :return:
     """
-
-    # Get param & create the User object
-    user = User(request.args['first_name'],
-                request.args['last_name'],
-                request.args['email'].lower(),
-                request.args['password'])
-    return user.create_user(collection)
+    return User.set_user(collection, request.args)
 
 
 @user_blueprint.route('/auth/login', methods=['POST'])
 def login():
     """
     Login
-    Postman exam: WEB_ROUTE/user/login?email=VALID_EMAIL&password=PASSWORD
+    Postman exam: WEB_ROUTE/auth/login?email=VALID_EMAIL&password=PASSWORD
     :return: user details
     """
-    # return User.login(collection)
-    return users.login(collection)
+    return user_controller.login(collection)
 
 
 @user_blueprint.route('/auth/logout', methods=['GET'])
 @authorize_user
 def logout(user, user_id):
     """
-    Postman exam: WEB_ROUTE/sign-out
+    Postman exam: WEB_ROUTE/auth/logout
     :return:
     """
 
@@ -152,3 +143,6 @@ def logout(user, user_id):
 
 # TODO: fix authentication: activate refresh token
 # TODO: fix logout function
+# TODO: Refactoring message calls and Object creation
+# TODO: Refactoring user model calls and methods
+

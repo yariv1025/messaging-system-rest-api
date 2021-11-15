@@ -2,8 +2,8 @@ from bson import ObjectId, json_util
 from flask import request, json
 from passlib.handlers.pbkdf2 import pbkdf2_sha256
 from api import tools, auth
-from api.models.messages import Message
-from api.models.users import User
+from api.models.message import Message
+from api.models.user import User
 
 
 def write(collection, user, sender_id):

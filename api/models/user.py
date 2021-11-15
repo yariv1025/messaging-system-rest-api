@@ -1,10 +1,8 @@
-import json
-
-from bson import ObjectId, json_util
-from flask import Response, request
+from bson import ObjectId
+from flask import Response
 from passlib.hash import pbkdf2_sha256
-from api import tools, auth
-from api.models.messages import Message
+from api import tools
+from api.models.message import Message
 
 
 class User:
@@ -34,7 +32,6 @@ class User:
         :return: response - message id
         """
         try:
-            # Insert message into DB
             message = self.temp_messages.pop()
             response = message.save(collection)
             return tools.JsonResp(response.inserted_id, 200)
@@ -72,7 +69,7 @@ class User:
         except Exception as e:
             return {"error": str(e)}, 500
 
-    def delete_message(self, collection, messageId, user_id):
+    def delete_message(self, collection, messageId):
         """
         Delete one message by id
         :param collection: db collection
@@ -95,22 +92,6 @@ class User:
         """
         try:
             return collection.users.insert_one(self.get_user_as_json())
-
-        except Exception as e:
-            return {"error": str(e)}, 500
-
-    def create_user(self, collection):
-        """
-        Create a new user
-        :param collection: db collection
-        :return: user id
-        """
-        try:
-            is_exists = self.is_exists(collection)
-            if not is_exists:
-                response = self.save_user(collection)
-                return tools.JsonResp(response.inserted_id, 200)
-            return is_exists
 
         except Exception as e:
             return {"error": str(e)}, 500
@@ -155,6 +136,30 @@ class User:
                 response.append(Message.update_message(collection, is_read))
 
     @staticmethod
+    def set_user(collection, request):
+        """
+        Create a new user
+        :param collection: db collection
+        :param request: request.args
+        :return: user id
+        """
+        try:
+            # Get request param & create the User object
+            user = User(request['first_name'],
+                        request['last_name'],
+                        request['email'].lower(),
+                        request['password'])
+
+            is_exists = user.is_exists(collection)
+            if not is_exists:
+                response = user.save_user(collection)
+                return tools.JsonResp(response.inserted_id, 200)
+            return is_exists
+
+        except Exception as e:
+            return {"error": str(e)}, 500
+
+    @staticmethod
     def get_user_instance(user_schema):
         return User(user_schema["first_name"],
                     user_schema["last_name"],
@@ -196,6 +201,7 @@ class User:
                                                     "last_login": tools.nowDatetimeUTC()
                                                     }}, upsert=True)
 
+            # TODO: create token model and initialize it
             resp = tools.JsonResp({
                 "id": user_response["_id"],
                 "email": user_response["email"],

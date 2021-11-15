@@ -6,7 +6,7 @@ from functools import wraps
 from jose import jwt
 from api import tools
 from api.database.db import DataBase as db
-from api.models.users import User
+from api.models.user import User
 from api.tools import JsonResp
 
 auth_blueprint = Blueprint("auth", __name__)

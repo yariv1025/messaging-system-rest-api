@@ -1,1 +1,1 @@
-from api.routes.v1.users import user_blueprint
+from api.routes.v1.user import user_blueprint
