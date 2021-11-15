@@ -1,3 +1,4 @@
+import bson
 from bson import ObjectId
 from api.tools import *
 
@@ -43,8 +44,7 @@ class Message:
         :param user_id: user id
         :return: all messages for a specific user
         """
-
-        return collection.messages.find({"sender_id": ObjectId(user_id)})
+        return list(collection.messages.find({"sender_id": ObjectId(user_id)}))
 
     @staticmethod
     def get_unread_messages(collection, user_id):
@@ -54,7 +54,7 @@ class Message:
         :param user_id: user id
         :return: all unread messages for a specific user
         """
-        return collection.messages.find({"sender_id": ObjectId(user_id), "is_read": False})
+        return list(collection.messages.find({"sender_id": ObjectId(user_id), "is_read": False}))
 
     @staticmethod
     def get_message(collection, messageId):

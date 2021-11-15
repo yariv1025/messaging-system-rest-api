@@ -12,6 +12,7 @@ from api.tools import JsonResp
 auth_blueprint = Blueprint("auth", __name__)
 conf = config.Config()
 
+
 def authorize_user(func):
     """
     Extension of code on an existing function.

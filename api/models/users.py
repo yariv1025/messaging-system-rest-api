@@ -17,6 +17,7 @@ class User:
         :param email: email
         :param password: password
         """
+        self.temp_messages = []
         self.defaults = {
             "first_name": first_name,
             "last_name": last_name,
@@ -26,20 +27,15 @@ class User:
             "last_login": tools.nowDatetimeUTC()
         }
 
-    def send_message(self, collection, sender_id):
+    def send_message(self, collection):
         """
         Sending message to user
-        :param sender_id: sender id
         :param collection: db collection
-        :return: response / feedback
+        :return: response - message id
         """
-        message = Message(sender_id,
-                          request.args['sender'],
-                          request.args['receiver'],
-                          request.args['subject'],
-                          request.args['message'])
         try:
             # Insert message into DB
+            message = self.temp_messages.pop()
             response = message.save(collection)
             return tools.JsonResp(response.inserted_id, 200)
 
@@ -56,35 +52,22 @@ class User:
         """
         try:
             if only_unread:
-                messages = Message.get_unread_messages(collection, user_id)
+                return Message.get_unread_messages(collection, user_id)
             else:
-                messages = Message.get_all_messages(collection, user_id)
-
-            if messages:
-                messages = [message for message in messages]
-                response = self.update_is_read_flag(collection, messages)
-                return tools.JsonResp(response, 200)
-
-            return tools.JsonResp([], 404)
+                return Message.get_all_messages(collection, user_id)
 
         except Exception as e:
             return {"error": str(e)}, 500
 
-    def read_message(self, collection, messageId, user_id):
+    def read_message(self, collection, messageId):
         """
         Find and return single message
         :param collection: db collection
         :param messageId: message id
-        :param user_id: user id
-        :return: one message
+        :return: single message
         """
         try:
-            message = [Message.get_message(collection, messageId)]
-            if message[0] is not None and message[0]["sender_id"] == ObjectId(user_id):
-                # Message found & message belong to user
-                self.update_is_read_flag(collection, message)
-                return tools.JsonResp(message[0], 200)
-            return tools.JsonResp("Forbidden", 403)
+            return Message.get_message(collection, messageId)
 
         except Exception as e:
             return {"error": str(e)}, 500
@@ -99,16 +82,7 @@ class User:
         """
 
         try:
-            message = Message.get_message(collection, messageId)
-
-            if message is not None and message["sender_id"] == ObjectId(user_id):
-                # Message found & message belong to user
-                response = Message.delete(collection, messageId)
-                return tools.JsonResp(response.deleted_count, 200)
-
-            else:
-                # Message not found
-                return tools.JsonResp("Message not found!", 404)
+            return Message.delete(collection, messageId)
 
         except Exception as e:
             return {"error": str(e)}, 500
@@ -149,14 +123,13 @@ class User:
         """
 
         try:
-            # Looking for user
-            user_response = collection.users.find_one({"email": self.defaults["email"].lower()})
-            if tools.validEmail(self.defaults["email"]) and user_response is None:
-                return False
+            if tools.validEmail(self.defaults["email"]):
+                user_response = collection.users.find_one({"email": self.defaults["email"].lower()})
 
-            else:
-                return {"message": "There's already an account with this email address",
-                        "error": "email_exists"}, 403
+                if user_response:
+                    return tools.JsonResp("User already exists", 409)
+                else:
+                    return False
 
         except Exception as e:
             return {"error": str(e)}, 500
@@ -167,19 +140,19 @@ class User:
         """
         return self.defaults.copy()
 
-    def update_is_read_flag(self, collection, messages):
+    def update_is_read_flag(self, collection):
         """
         Update is_read flag
         :param collection: db collection
-        :param messages: user messages
         :return: db response
         """
         response = []
+        messages = self.temp_messages.pop()
+
         for message in messages:
             if not message["is_read"]:
                 is_read = {"_id": ObjectId(message["_id"])}, {"$set": {"is_read": True}}
                 response.append(Message.update_message(collection, is_read))
-        return messages
 
     @staticmethod
     def get_user_instance(user_schema):
@@ -189,54 +162,52 @@ class User:
                     user_schema["password"])
 
     @staticmethod
-    def login(collection):
+    def find_user(collection, email_login_details):
+        """
+        Find user by email
+        :param collection: db collection
+        :param email_login_details: email
+        :return: user instance / False if user not found
+        """
+        try:
+            user_response = collection.users.find_one(email_login_details)
+            if user_response:
+                return user_response
+            return False
+
+        except Exception as e:
+            return {"error": str(e)}, 500
+
+    @staticmethod
+    def login(collection, user_response, access_token, refresh_token):
         """
         User login
         :param collection: db collection
+        :param user_response: user instance
+        :param access_token: access token
+        :param refresh_token: refresh token
         :return: user details
         """
         try:
 
-            login_details = {"email": request.args['email'].lower(),
-                             "password": request.args['password']}
-            user_response = collection.users.find_one({"email": login_details['email']})
+            collection.tokens.update_many({"user_id": ObjectId(user_response['_id'])},
+                                          {"$set": {"access_token": access_token,
+                                                    "refresh_token": refresh_token,
+                                                    "last_login": tools.nowDatetimeUTC()
+                                                    }}, upsert=True)
 
-            if user_response:
-                if pbkdf2_sha256.verify(login_details["password"], user_response["password"]) and user_response:
-                    """
-                    Check:
-                    - that the password in the database is not the old hash
-                    - that the password in the database is a correct hash of the password
-                    - that the user is exist
-                    """
+            resp = tools.JsonResp({
+                "id": user_response["_id"],
+                "email": user_response["email"],
+                "first_name": user_response["first_name"],
+                "last_name": user_response["last_name"],
+                "access_token": access_token,
+                "refresh_token": refresh_token
+            }, 200)
 
-                    user_id = json.dumps(user_response['_id'], default=json_util.default)
+            return resp
 
-                    access_token = auth.encodeAccessToken(user_id, user_response["email"])
-                    refresh_token = auth.encodeRefreshToken(user_id, user_response["email"])
 
-                    collection.tokens.update_many({"user_id": ObjectId(user_response['_id'])},
-                                                  {"$set": {"access_token": access_token,
-                                                            "refresh_token": refresh_token,
-                                                            "last_login": tools.nowDatetimeUTC()
-                                                            }}, upsert=True)
-
-                    resp = tools.JsonResp({
-                        "id": user_response["_id"],
-                        "email": user_response["email"],
-                        "first_name": user_response["first_name"],
-                        "last_name": user_response["last_name"],
-                        "access_token": access_token,
-                        "refresh_token": refresh_token
-                    }, 200)
-
-                    return resp
-
-                else:
-                    return tools.JsonResp({"message": "Invalid user credentials"}, 403)
-
-            else:
-                return tools.JsonResp({"message": "User Not Found"}, 404)
 
         except Exception as e:
             return {"error": str(e)}, 500
