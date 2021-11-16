@@ -34,8 +34,9 @@ pipenv lock                   #Generate a lockfile
            * Script path: "YOURS-PATH"\messaging-system-rest-api\src\app.py
            * Environment variables: ;FLASK_ENV=development;FLASK_APP=./src/app.py;MONGO_USER="YOURS-USERNAME";MONGO_PASS="YOURS-PASSWORD";MONGO_URI="YOURS_DB_URI";SECRET_KEY="YOUR_SECRET_KEY"
   
-<font color="red">*</font> Complete MongoDB URI should look like:   f'mongodb+srv://{username}:{password}{mongo_uri}'
-##### <font color="red"> Attention:</font> You must change MONGO_USER, MONGO_PASS, YOURS-PATH, etc. variables.
+* Complete MongoDB URI should look like:   f'mongodb+srv://{username}:{password}{mongo_uri}'
+##### Attention:    You must change MONGO_USER, MONGO_PASS, YOURS-PATH, etc. variables.
+
 ___
 
 
@@ -44,6 +45,6 @@ ___
 * Create API collection
 * Create the CRUD requests
 
-###### <font color="red">*</font> You can check your requests on [Heroku demo server](https://restmessagingsystem.herokuapp.com/)
-###### <font color="red">*</font> "Seed" data could be found in the next path: "YOUR_PROJECT_PATH/api/static/INIT_DATA.json".
+###### * You can check your requests on [Heroku demo server](https://restmessagingsystem.herokuapp.com/)
+###### * "Seed" data could be found in the next path: "YOUR_PROJECT_PATH/api/static/INIT_DATA.json".
   
