@@ -38,14 +38,8 @@ def get_messages(data):
     :param data: user details
     :return: all messages for a specific user
     """
-    try:
-        only_unread = request.args.get('only_unread')
-
-    except BadRequestKeyError as e:
-        return json_resp({"message": "Missing parameter", "exception": str(e)}, 400)
-
     user_id = json.loads(data["user_id"])["$oid"]
-    return user_controller.read_all(collection, user_id, only_unread)
+    return user_controller.read_all(collection, user_id)
 
 
 @user_blueprint.route('/messages/<string:messageId>', methods=['GET'])

@@ -74,7 +74,7 @@ def read(collection, message_id, user_id):
         return json_resp({"message": "Error", "exception": str(e)}, 500)
 
 
-def read_all(collection, user_id, only_unread):
+def read_all(collection, user_id):
     """
     Read all messages OR all unread messages.
     :param collection: db collection
@@ -83,6 +83,8 @@ def read_all(collection, user_id, only_unread):
     :return: messages as JSON
     """
     try:
+        only_unread = request.args.get('only_unread')
+
         if only_unread == 'False' or only_unread == 'false':
             only_unread = False
         elif only_unread == 'True' or only_unread == 'true':
@@ -96,6 +98,9 @@ def read_all(collection, user_id, only_unread):
             User.update_is_read_flag(collection, messages)
             return json_resp([message for message in messages], 200)
         return json_resp([], 404)
+
+    except BadRequestKeyError as e:
+        return json_resp({"message": "Missing parameter", "exception": str(e)}, 400)
 
     except Exception as e:
         return json_resp({"message": "Error", "exception": str(e)}, 500)
