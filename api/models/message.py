@@ -1,5 +1,5 @@
 from bson import ObjectId
-from api.tools import *
+from api.utilities import now_datetimeUTC
 
 
 class Message:
@@ -18,7 +18,7 @@ class Message:
             "receiver": receiver_name,
             "subject": subject,
             "message": message,
-            "date_created": nowDatetimeUTC(),
+            "date_created": now_datetimeUTC(),
             "is_read": False
         }
 
@@ -43,7 +43,7 @@ class Message:
         :param user_id: user id
         :return: all messages for a specific user
         """
-        return list(collection.messages.find({"sender_id": ObjectId(user_id)}))
+        return list(collection.messages.find({"sender_id": user_id}))
 
     @staticmethod
     def get_unread_messages(collection, user_id):
@@ -53,7 +53,7 @@ class Message:
         :param user_id: user id
         :return: all unread messages for a specific user
         """
-        return list(collection.messages.find({"sender_id": ObjectId(user_id), "is_read": False}))
+        return list(collection.messages.find({"sender_id": user_id, "is_read": False}))
 
     @staticmethod
     def get_message(collection, messageId):

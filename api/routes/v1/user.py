@@ -1,16 +1,13 @@
-import config
+from werkzeug.exceptions import BadRequestKeyError
+from flask import Blueprint, request, json
 
-from api.auth import authorize_user
-from flask import Blueprint, request
-from jose import jwt
-from api import tools
+from api.controllers.token import refresh_token
+from api.utilities import authorize_required, json_resp
 from api.seed.seeder import seed
-from api.models.user import User
 from api.database.db import DataBase
 from api.controllers import user as user_controller
 
 user_blueprint = Blueprint("user", __name__)
-conf = config.exportConfig.SECRET_KEY
 collection = DataBase.get_instance()
 
 
@@ -29,77 +26,78 @@ def seed_db():
     Performs seeding to mongo db
     :return: message response
     """
-
-    seed()
-    return "SEED"
+    return seed()
 
 
 @user_blueprint.route('/messages', methods=['GET'])
-@authorize_user
-def get_messages(user, user_id):
+@authorize_required
+def get_messages(data):
     """
     Get all read messages / unread messages
     Postman exam: WEB_ROUTE/messages?only_unread=True
-    :param user: user instance
-    :param user_id: user id
+    :param data: user details
     :return: all messages for a specific user
     """
-    only_unread = request.args.get('only_unread')
-    return user_controller.read_all(collection, user, user_id, only_unread)
+    try:
+        only_unread = request.args.get('only_unread')
+
+    except BadRequestKeyError as e:
+        return json_resp({"message": "Missing parameter", "exception": str(e)}, 400)
+
+    user_id = json.loads(data["user_id"])["$oid"]
+    return user_controller.read_all(collection, user_id, only_unread)
 
 
 @user_blueprint.route('/messages/<string:messageId>', methods=['GET'])
-@authorize_user
-def get_message(user, user_id, messageId):
+@authorize_required
+def get_single_message(data, **kwargs):
     """
     Get message by id
     Postman exam: WEB_ROUTE/messages/MESSAGE_ID_FROM_MONGO_DB
-    :param user: user instance
-    :param user_id: user id
-    :param messageId: message identification number
+    :param data: user details
     :return: Details of one message
     """
-    return user_controller.read(collection, user, messageId["messageId"], user_id)
+    user_id = json.loads(data["user_id"])["$oid"]
+    return user_controller.read(collection, kwargs["messageId"], user_id)
 
 
 @user_blueprint.route('/messages/<string:messageId>', methods=['DELETE'])
-@authorize_user
-def delete_message(user, user_id, messageId):
+@authorize_required
+def delete_single_message(data, **kwargs):
     """
     Delete specific message by id
     Postman exam: WEB_ROUTE/messages/MESSAGE_ID_FROM_MONGO_DB
-    :param user: user instance
-    :param user_id: user id
-    :param messageId: message id
+    :param data: data details
     :return: response / feedback
     """
-    return user_controller.delete(collection, user, messageId["messageId"], user_id)
+    user_id = json.loads(data["user_id"])["$oid"]
+    return user_controller.delete(collection, kwargs["messageId"], user_id)
 
 
 @user_blueprint.route('/messages', methods=['POST'])
-@authorize_user
-def post_message(user, user_id):
+@authorize_required
+def post_message(data):
     """
     Post message
-    Postman exam: WEB_ROUTE/messages?sender=SENDER_FULL_NAME&receiver=RECEIVER_FULL_NAME&subject=SUBJECT&message=MESSAGE
-    :param user: user instance
-    :param user_id: user id
+    Postman exam: WEB_ROUTE/messages
+    :param data: user details
     :return: message id
     """
-    return user_controller.write(collection, user, user_id)
+    user_id = json.loads(data["user_id"])["$oid"]
+    return user_controller.write(collection, user_id)
 
 
 @user_blueprint.route('/user', methods=['POST'])
 def signup():
     """
     signup
-    Postman exam: WEB_ROUTE/user?first_name=FIRST_NAME&last_name=LAST_NAME&email=VALID_EMAIL&password=PASSWORD
+    Postman exam: WEB_ROUTE/user
     :return:
     """
-    return User.set_user(collection, request.args)
+    return user_controller.signup(collection)
 
 
-@user_blueprint.route('/auth/login', methods=['POST'])
+@user_blueprint.route('/oauth/login', methods=['POST'])
 def login():
     """
     Login
@@ -109,40 +107,29 @@ def login():
     return user_controller.login(collection)
 
 
-@user_blueprint.route('/auth/logout', methods=['GET'])
-@authorize_user
-def logout(user, user_id):
+@user_blueprint.route('/oauth/logout', methods=['POST'])
+@authorize_required
+def logout(data, **kwargs):
     """
-    Postman exam: WEB_ROUTE/auth/logout
+    Postman exam: WEB_ROUTE/oauth/logout
     :return:
     """
+    # Note: Need to implement Token Revoking/Blacklisting
+    # Info: https://flask-jwt-extended.readthedocs.io/en/latest/blocklist_and_token_revoking/
+    # Info: https://darksun-flask-jwt-extended.readthedocs.io/en/latest/blacklist_and_token_revoking/
+    return user_controller.logout()
 
-    try:
-        print("SECRET_KEY: ", conf.SECRET_KEY)
 
-        access_token = request.headers['Authorization'].split()[1]
-        print("access_token: ", access_token)
+@user_blueprint.route('/oauth/token', methods=['POST'])
+def token():
+    """
+    Postman exam: WEB_ROUTE/oauth/token
+    :return: new access token
+    """
+    return refresh_token()
 
-        token_data = jwt.decode(access_token, conf.SECRET_KEY)
-        print("token_data: ", token_data)
 
-        resp = conf.collection.tokens.update({"id": token_data["user_id"]}, {'$set': {"refresh_token": ""}},
-                                             upsert=True)
-
-        print("resp: ", resp)
-        exit(0)
-        # Note: At some point I need to implement Token Revoking/Blacklisting
-        # General info here: https://flask-jwt-extended.readthedocs.io/en/latest/blacklist_and_token_revoking.html
-
-        resp = tools.JsonResp({"message": "User logged out"}, 200)
-        print("resp: ", resp)
-        return resp
-
-    except Exception as e:
-        return {"error": str(e)}, 500
-
-# TODO: fix authentication: activate refresh token
 # TODO: fix logout function
 # TODO: Refactoring message calls and Object creation
 # TODO: Refactoring user model calls and methods
-
+# TODO: Create tests

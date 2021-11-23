@@ -26,7 +26,7 @@ def create_users():
 
     try:
         user_id = []
-        with open('./api/seed/INIT_DATA.json') as f:
+        with open('../static/INIT_DATA.json') as f:
             init_collections = json.load(f)
             users = init_collections["users"]
 
@@ -40,7 +40,7 @@ def create_users():
         return user_id
 
     except (IOError, EOFError, FileNotFoundError) as e:
-        print("Error. {}".format(e.args[-1]))
+        return "Error. {}".format(e.args[-1])
 
 
 def create_messages(user_id):
@@ -49,7 +49,7 @@ def create_messages(user_id):
     :param user_id: users id's list
     """
     try:
-        with open('./api/seed/INIT_DATA.json') as f:
+        with open('../static/INIT_DATA.json') as f:
             init_collections = json.load(f)
             messages = init_collections["messages"]
 
@@ -60,5 +60,5 @@ def create_messages(user_id):
 
         f.close()
 
-    except (IOError, EOFError) as e:
+    except (IOError, EOFError, FileNotFoundError) as e:
         print("Error. {}".format(e.args[-1]))

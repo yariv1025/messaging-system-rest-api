@@ -1,7 +1,7 @@
 from bson import ObjectId
 from flask import Response
 from passlib.hash import pbkdf2_sha256
-from api import tools
+from api import utilities
 from api.models.message import Message
 
 
@@ -21,68 +21,9 @@ class User:
             "last_name": last_name,
             "email": email.lower(),
             "password": pbkdf2_sha256.encrypt(password, rounds=20000, salt_size=16),
-            "date_created": tools.nowDatetimeUTC(),
-            "last_login": tools.nowDatetimeUTC()
+            "date_created": utilities.now_datetimeUTC(),
+            "last_login": utilities.now_datetimeUTC()
         }
-
-    def send_message(self, collection):
-        """
-        Sending message to user
-        :param collection: db collection
-        :return: response - message id
-        """
-        try:
-            message = self.temp_messages.pop()
-            response = message.save(collection)
-            return tools.JsonResp(response.inserted_id, 200)
-
-        except Exception as e:
-            return {"error": str(e)}, 500
-
-    def read_messages(self, collection, user_id, only_unread):
-        """
-        Reading all user messages || Unread user messages
-        :param collection: db collection
-        :param user_id: user id
-        :param only_unread: flag
-        :return: All user messages
-        """
-        try:
-            if only_unread:
-                return Message.get_unread_messages(collection, user_id)
-            else:
-                return Message.get_all_messages(collection, user_id)
-
-        except Exception as e:
-            return {"error": str(e)}, 500
-
-    def read_message(self, collection, messageId):
-        """
-        Find and return single message
-        :param collection: db collection
-        :param messageId: message id
-        :return: single message
-        """
-        try:
-            return Message.get_message(collection, messageId)
-
-        except Exception as e:
-            return {"error": str(e)}, 500
-
-    def delete_message(self, collection, messageId):
-        """
-        Delete one message by id
-        :param collection: db collection
-        :param messageId: message id
-        :param user_id: message user_id
-        :return: response / feedback
-        """
-
-        try:
-            return Message.delete(collection, messageId)
-
-        except Exception as e:
-            return {"error": str(e)}, 500
 
     def save_user(self, collection):
         """
@@ -104,11 +45,11 @@ class User:
         """
 
         try:
-            if tools.validEmail(self.defaults["email"]):
+            if utilities.valid_email(self.defaults["email"]):
                 user_response = collection.users.find_one({"email": self.defaults["email"].lower()})
 
                 if user_response:
-                    return tools.JsonResp("User already exists", 409)
+                    return utilities.json_resp("User already exists", 409)
                 else:
                     return False
 
@@ -121,14 +62,77 @@ class User:
         """
         return self.defaults.copy()
 
-    def update_is_read_flag(self, collection):
+    @staticmethod
+    def send_message(collection, message):
+        """
+        Sending message to user
+        :param collection: db collection
+        :param message: message
+        :return: response - message id
+        """
+        try:
+            response = message.save(collection)
+            return utilities.json_resp(response.inserted_id, 200)
+
+        except Exception as e:
+            return {"error": str(e)}, 500
+
+    @staticmethod
+    def read_messages(collection, user_id, only_unread):
+        """
+        Reading all user messages || Unread user messages
+        :param collection: db collection
+        :param user_id: user id
+        :param only_unread: flag
+        :return: All user messages
+        """
+        try:
+            if only_unread:
+                return Message.get_unread_messages(collection, user_id)
+            else:
+                return Message.get_all_messages(collection, user_id)
+
+        except Exception as e:
+            return {"error": str(e)}, 500
+
+    @staticmethod
+    def read_message(collection, messageId):
+        """
+        Find and return single message
+        :param collection: db collection
+        :param messageId: message id
+        :return: single message
+        """
+        try:
+            return Message.get_message(collection, messageId)
+
+        except Exception as e:
+            return {"error": str(e)}, 500
+
+    @staticmethod
+    def delete_message(collection, messageId):
+        """
+        Delete one message by id
+        :param collection: db collection
+        :param messageId: message id
+        :return: response / feedback
+        """
+
+        try:
+            return Message.delete(collection, messageId)
+
+        except Exception as e:
+            return {"error": str(e)}, 500
+
+    @staticmethod
+    def update_is_read_flag(collection, messages):
         """
         Update is_read flag
         :param collection: db collection
+        :param messages: message
         :return: db response
         """
         response = []
-        messages = self.temp_messages.pop()
 
         for message in messages:
             if not message["is_read"]:
@@ -136,24 +140,19 @@ class User:
                 response.append(Message.update_message(collection, is_read))
 
     @staticmethod
-    def set_user(collection, request):
+    def set_user(collection, user):
         """
         Create a new user
         :param collection: db collection
-        :param request: request.args
+        :param user: user object
         :return: user id
         """
         try:
-            # Get request param & create the User object
-            user = User(request['first_name'],
-                        request['last_name'],
-                        request['email'].lower(),
-                        request['password'])
-
             is_exists = user.is_exists(collection)
+
             if not is_exists:
                 response = user.save_user(collection)
-                return tools.JsonResp(response.inserted_id, 200)
+                return utilities.json_resp(response.inserted_id, 200)
             return is_exists
 
         except Exception as e:
@@ -179,41 +178,6 @@ class User:
             if user_response:
                 return user_response
             return False
-
-        except Exception as e:
-            return {"error": str(e)}, 500
-
-    @staticmethod
-    def login(collection, user_response, access_token, refresh_token):
-        """
-        User login
-        :param collection: db collection
-        :param user_response: user instance
-        :param access_token: access token
-        :param refresh_token: refresh token
-        :return: user details
-        """
-        try:
-
-            collection.tokens.update_many({"user_id": ObjectId(user_response['_id'])},
-                                          {"$set": {"access_token": access_token,
-                                                    "refresh_token": refresh_token,
-                                                    "last_login": tools.nowDatetimeUTC()
-                                                    }}, upsert=True)
-
-            # TODO: create token model and initialize it
-            resp = tools.JsonResp({
-                "id": user_response["_id"],
-                "email": user_response["email"],
-                "first_name": user_response["first_name"],
-                "last_name": user_response["last_name"],
-                "access_token": access_token,
-                "refresh_token": refresh_token
-            }, 200)
-
-            return resp
-
-
 
         except Exception as e:
             return {"error": str(e)}, 500
