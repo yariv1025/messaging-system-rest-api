@@ -1,7 +1,6 @@
 from bson import ObjectId
-from flask import Response
 from passlib.hash import pbkdf2_sha256
-from api import utilities
+from api.utilities import *
 from api.models.message import Message
 
 
@@ -15,14 +14,13 @@ class User:
         :param email: email
         :param password: password
         """
-        self.temp_messages = []
         self.defaults = {
             "first_name": first_name,
             "last_name": last_name,
-            "email": email.lower(),
+            "email": email,
             "password": pbkdf2_sha256.encrypt(password, rounds=20000, salt_size=16),
-            "date_created": utilities.now_datetimeUTC(),
-            "last_login": utilities.now_datetimeUTC()
+            "date_created": now_datetimeUTC(),
+            "last_login": now_datetimeUTC()
         }
 
     def save_user(self, collection):
@@ -45,13 +43,12 @@ class User:
         """
 
         try:
-            if utilities.valid_email(self.defaults["email"]):
-                user_response = collection.users.find_one({"email": self.defaults["email"].lower()})
+            user_response = collection.users.find_one({"email": self.defaults["email"].lower()})
 
-                if user_response:
-                    return utilities.json_resp("User already exists", 409)
-                else:
-                    return False
+            if user_response:
+                return json_resp("User already exists", 409)
+            else:
+                return False
 
         except Exception as e:
             return {"error": str(e)}, 500
@@ -72,7 +69,7 @@ class User:
         """
         try:
             response = message.save(collection)
-            return utilities.json_resp(response.inserted_id, 200)
+            return json_resp(response.inserted_id, 200)
 
         except Exception as e:
             return {"error": str(e)}, 500
@@ -152,7 +149,7 @@ class User:
 
             if not is_exists:
                 response = user.save_user(collection)
-                return utilities.json_resp(response.inserted_id, 200)
+                return json_resp(response.inserted_id, 200)
             return is_exists
 
         except Exception as e:

@@ -1,5 +1,5 @@
 from bson import ObjectId
-from api.utilities import now_datetimeUTC
+from api.utilities import now_datetimeUTC, handle_query
 
 
 class Message:
@@ -27,7 +27,7 @@ class Message:
         Saving single message into db
         :param collection: db collection
         """
-        return collection.messages.insert_one(self.to_json())
+        return handle_query(collection.messages.insert_one(self.to_json()))
 
     def to_json(self):
         """
@@ -43,7 +43,7 @@ class Message:
         :param user_id: user id
         :return: all messages for a specific user
         """
-        return list(collection.messages.find({"sender_id": user_id}))
+        return handle_query(list(collection.messages.find({"sender_id": user_id})))
 
     @staticmethod
     def get_unread_messages(collection, user_id):
@@ -53,7 +53,7 @@ class Message:
         :param user_id: user id
         :return: all unread messages for a specific user
         """
-        return list(collection.messages.find({"sender_id": user_id, "is_read": False}))
+        return handle_query(list(collection.messages.find({"sender_id": user_id, "is_read": False})))
 
     @staticmethod
     def get_message(collection, messageId):
@@ -63,7 +63,7 @@ class Message:
         :param messageId: message identification number
         :return: Details of one message
         """
-        return collection.messages.find_one({"_id": ObjectId(messageId)})
+        return handle_query(collection.messages.find_one({"_id": ObjectId(messageId)}))
 
     @staticmethod
     def delete(collection, messageId):
@@ -72,7 +72,7 @@ class Message:
         :param collection: db collection
         :param messageId: message id
         """
-        return collection.messages.delete_one({"_id": ObjectId(messageId)})
+        return handle_query(collection.messages.delete_one({"_id": ObjectId(messageId)}))
 
     @staticmethod
     def update_message(collection, desired_fields):
@@ -81,4 +81,4 @@ class Message:
         :param desired_fields: key=field to update, value=data to be updated
         :return: the original message (before update)
         """
-        return collection.messages.find_one_and_update(desired_fields[0], desired_fields[1])
+        return handle_query(collection.messages.find_one_and_update(desired_fields[0], desired_fields[1]))

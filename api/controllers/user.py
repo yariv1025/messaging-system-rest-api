@@ -4,10 +4,10 @@ from werkzeug.exceptions import BadRequestKeyError
 from api.utilities import *
 from api.models.message import Message
 from api.models.user import User
-from api.utilities import split_data
+from api.utilities import split_data, valid_email
 
 
-def signup(collection):
+def signup_user(collection):
     """
     Getting request data & creating user object
     :param collection: db collection
@@ -15,6 +15,9 @@ def signup(collection):
     """
     try:
         data = split_data(request.get_data(as_text=True))
+
+        if not valid_email(data['email'].lower()):
+            raise ValueError("Invalid email address")
 
         user = User(data['first_name'],
                     data['last_name'],
@@ -30,9 +33,12 @@ def signup(collection):
         return json_resp({"message": "Error", "exception": str(e)}, 500)
 
 
-def write(collection, sender_id):
+def write_user_message(collection, sender_id):
     """
-    Create & send a message to a user.
+    Create & send a message.
+    :param collection: db collection
+    :param sender_id: user id
+    :return: message id
     """
     try:
         data = split_data(request.get_data(as_text=True))
@@ -52,7 +58,7 @@ def write(collection, sender_id):
         return json_resp({"message": "Error", "exception": str(e)}, 500)
 
 
-def read(collection, message_id, user_id):
+def read_user_message(collection, message_id, user_id):
     """
     Read a message.
     :param collection: db collection
@@ -74,7 +80,7 @@ def read(collection, message_id, user_id):
         return json_resp({"message": "Error", "exception": str(e)}, 500)
 
 
-def read_all(collection, user_id):
+def read_all_user_messages(collection, user_id):
     """
     Read all messages OR all unread messages.
     :param collection: db collection
@@ -89,7 +95,7 @@ def read_all(collection, user_id):
         elif only_unread == 'True' or only_unread == 'true':
             only_unread = True
         else:
-            raise Exception("Invalid parameter")
+            raise ValueError("Invalid parameter. only_unread parameter should be True or False.")
 
         messages = User.read_messages(collection, user_id, only_unread)
 
@@ -105,7 +111,7 @@ def read_all(collection, user_id):
         return json_resp({"message": "Error", "exception": str(e)}, 500)
 
 
-def delete(collection, message_id, user_id):
+def delete_user_message(collection, message_id, user_id):
     """
     Delete a message.
     :param collection: db collection
@@ -121,14 +127,13 @@ def delete(collection, message_id, user_id):
             response = User.delete_message(collection, message_id)
             return json_resp(response.deleted_count, 200)
         else:
-            # Message not found
             return json_resp("Message not found!", 404)
 
     except Exception as e:
         return json_resp({"message": "Error", "exception": str(e)}, 500)
 
 
-def login(collection):
+def login_user(collection):
     """
     Login a user.
     :param collection: db collection
@@ -136,17 +141,15 @@ def login(collection):
     """
     try:
         user_login_details = split_data(request.get_data(as_text=True))
+
+        if not valid_email(user_login_details["email"]):
+            raise ValueError("Invalid email address.")
+
         user_response = User.find_user(collection, {"email": user_login_details["email"]})
 
         if user_response and pbkdf2_sha256.verify(user_login_details["password"], user_response["password"]):
-            """
-            Check:
-            - if user exists
-            - if the password in the database is correct hash of the password
-            """
-
+            # check if user exists & if the password in the database is correct hash of the password
             user_id = json.dumps(user_response['_id'], default=json_util.default)
-
             access_token = encode_access_token(user_id, user_response["email"])
             refresh_token = encode_refresh_token(user_id, user_response["email"])
 
@@ -167,7 +170,7 @@ def login(collection):
         return json_resp({"message": "Error", "exception": str(e)}, 500)
 
 
-def logout():
+def logout_user():
     """
     Logout a user.
     :return: user details as JSON

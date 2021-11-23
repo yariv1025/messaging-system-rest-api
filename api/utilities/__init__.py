@@ -59,8 +59,8 @@ def valid_email(email):
     :return: True or False
     """
     import re
-
-    if re.match("^.+\\@(\\[?)[a-zA-Z0-9\\-\\.]+\\.([a-zA-Z]{2,3}|[0-9]{1,3})(\\]?)$", email) is not None:
+    regex = '^[a-z0-9]+[\._]?[a-z0-9]+[@]\w+[.]\w{2,3}$'
+    if re.match(regex, email) is not None:
         return True
     else:
         return False
@@ -87,12 +87,26 @@ def split_data(message):
     return data
 
 
+def handle_query(query):
+    """
+    Query handling by General try-except
+    :param query: query
+    :return: query result
+    """
+    try:
+        return query
+
+    except Exception as e:
+        return json_resp({"message": "Error", "exception": str(e)}, 500)
+
+
 def authorize_required(f):
     """
     Auth decorator to check if the user is authorized
     :param f:
     :return:
     """
+
     @wraps(f)
     def decorated(*args, **kwargs):
         access_token = request.headers['Authorization'].split()[1]

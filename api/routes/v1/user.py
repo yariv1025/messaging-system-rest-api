@@ -1,10 +1,7 @@
-from flask import Blueprint, json
-
 from api.controllers.token import refresh_token
-from api.utilities import authorize_required, json_resp
 from api.seed.seeder import seed
 from api.database.db import DataBase
-from api.controllers import user as user_controller
+from api.controllers.user import *
 
 user_blueprint = Blueprint("user", __name__)
 collection = DataBase.get_instance()
@@ -38,7 +35,7 @@ def get_messages(data):
     :return: all messages for a specific user
     """
     user_id = json.loads(data["user_id"])["$oid"]
-    return user_controller.read_all(collection, user_id)
+    return read_all_user_messages(collection, user_id)
 
 
 @user_blueprint.route('/messages/<string:messageId>', methods=['GET'])
@@ -51,7 +48,7 @@ def get_single_message(data, **kwargs):
     :return: Details of one message
     """
     user_id = json.loads(data["user_id"])["$oid"]
-    return user_controller.read(collection, kwargs["messageId"], user_id)
+    return read_user_message(collection, kwargs["messageId"], user_id)
 
 
 @user_blueprint.route('/messages/<string:messageId>', methods=['DELETE'])
@@ -64,7 +61,7 @@ def delete_single_message(data, **kwargs):
     :return: response / feedback
     """
     user_id = json.loads(data["user_id"])["$oid"]
-    return user_controller.delete(collection, kwargs["messageId"], user_id)
+    return delete_user_message(collection, kwargs["messageId"], user_id)
 
 
 @user_blueprint.route('/messages', methods=['POST'])
@@ -77,7 +74,7 @@ def post_message(data):
     :return: message id
     """
     user_id = json.loads(data["user_id"])["$oid"]
-    return user_controller.write(collection, user_id)
+    return write_user_message(collection, user_id)
 
 
 @user_blueprint.route('/user', methods=['POST'])
@@ -87,7 +84,7 @@ def signup():
     Postman exam: WEB_ROUTE/user
     :return:
     """
-    return user_controller.signup(collection)
+    return signup_user(collection)
 
 
 @user_blueprint.route('/oauth/login', methods=['POST'])
@@ -97,12 +94,12 @@ def login():
     Postman exam: WEB_ROUTE/auth/login?email=VALID_EMAIL&password=PASSWORD
     :return: user details
     """
-    return user_controller.login(collection)
+    return login_user(collection)
 
 
 @user_blueprint.route('/oauth/logout', methods=['POST'])
 @authorize_required
-def logout(data, **kwargs):
+def logout():
     """
     Postman exam: WEB_ROUTE/oauth/logout
     :return:
@@ -110,7 +107,7 @@ def logout(data, **kwargs):
     # Note: Need to implement Token Revoking/Blacklisting
     # Info: https://flask-jwt-extended.readthedocs.io/en/latest/blocklist_and_token_revoking/
     # Info: https://darksun-flask-jwt-extended.readthedocs.io/en/latest/blacklist_and_token_revoking/
-    return user_controller.logout()
+    return logout_user()
 
 
 @user_blueprint.route('/oauth/token', methods=['POST'])
