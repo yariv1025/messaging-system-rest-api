@@ -14,7 +14,7 @@ def signup(collection):
     :return: user object as JSON
     """
     try:
-        data = split_data(request.get_data(as_text=True).split('&'))
+        data = split_data(request.get_data(as_text=True))
 
         user = User(data['first_name'],
                     data['last_name'],
@@ -35,7 +35,7 @@ def write(collection, sender_id):
     Create & send a message to a user.
     """
     try:
-        data = split_data(request.get_data(as_text=True).split('&'))
+        data = split_data(request.get_data(as_text=True))
 
         message = Message(sender_id,
                           data['sender'],
@@ -79,7 +79,6 @@ def read_all(collection, user_id):
     Read all messages OR all unread messages.
     :param collection: db collection
     :param user_id: user id
-    :param only_unread: boolean flag
     :return: messages as JSON
     """
     try:
@@ -136,7 +135,7 @@ def login(collection):
     :return: user details as JSON
     """
     try:
-        user_login_details = split_data(request.get_data(as_text=True).split('&'))
+        user_login_details = split_data(request.get_data(as_text=True))
         user_response = User.find_user(collection, {"email": user_login_details["email"]})
 
         if user_response and pbkdf2_sha256.verify(user_login_details["password"], user_response["password"]):

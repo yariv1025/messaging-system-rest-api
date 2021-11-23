@@ -72,6 +72,7 @@ def split_data(message):
     :param message: body data (x-www-form-urlencoded)
     :return: dictionary with arranged data
     """
+    message = message.split('&')
     new = []
     data = {}
 

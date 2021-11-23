@@ -1,5 +1,4 @@
-from werkzeug.exceptions import BadRequestKeyError
-from flask import Blueprint, request, json
+from flask import Blueprint, json
 
 from api.controllers.token import refresh_token
 from api.utilities import authorize_required, json_resp
