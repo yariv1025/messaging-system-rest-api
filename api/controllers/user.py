@@ -1,3 +1,4 @@
+from cerberus import Validator
 from flask import json
 from passlib.handlers.pbkdf2 import pbkdf2_sha256
 from werkzeug.exceptions import BadRequestKeyError
@@ -5,6 +6,7 @@ from api.utilities import *
 from api.models.message import Message
 from api.models.user import User
 from api.utilities import split_data, valid_email
+from api.validations import get_blueprint_schema
 
 
 def read_all_messages(collection, user_id):
@@ -82,24 +84,22 @@ def delete_message(collection, message_id, user_id):
         return json_resp({"message": "Error", "exception": str(e)}, 500)
 
 
-def write_message(collection, sender_id):
+def write_message(collection, sender_id, message):
     """
     Create & send a message.
     :param collection: db collection
     :param sender_id: user id
+    :param message: user message
     :return: message id
     """
     try:
-        data = request.get_data(as_text=True)
-        data = split_data(data)
+        message_obj = Message(sender_id,
+                              message['sender'],
+                              message['receiver'],
+                              message['subject'],
+                              message['message'])
 
-        message = Message(sender_id,
-                          data['sender'],
-                          data['receiver'],
-                          data['subject'],
-                          data['message'])
-
-        return User.send_message(collection, message)
+        return User.send_message(collection, message_obj)
 
     except (BadRequestKeyError, IndexError) as e:
         return json_resp({"message": "Missing parameter", "exception": str(e)}, 400)
@@ -108,22 +108,20 @@ def write_message(collection, sender_id):
         return json_resp({"message": "Error", "exception": str(e)}, 500)
 
 
-def signup(collection):
+def signup(collection, user_data):
     """
     Getting request data & creating user object
     :param collection: db collection
     :return: user object as JSON
     """
     try:
-        data = split_data(request.get_data(as_text=True))
-
-        if not valid_email(data['email'].lower()):
+        if not valid_email(user_data['email'].lower()):
             raise ValueError("Invalid email address")
 
-        user = User(data['first_name'],
-                    data['last_name'],
-                    data['email'].lower(),
-                    data['password'])
+        user = User(user_data['first_name'],
+                    user_data['last_name'],
+                    user_data['email'].lower(),
+                    user_data['password'])
 
         return User.set_user(collection, user)
 
@@ -134,21 +132,19 @@ def signup(collection):
         return json_resp({"message": "Error", "exception": str(e)}, 500)
 
 
-def login(collection):
+def login(collection, user_data):
     """
     Login a user.
     :param collection: db collection
     :return: user details as JSON
     """
     try:
-        user_login_details = split_data(request.get_data(as_text=True))
-
-        if not valid_email(user_login_details["email"]):
+        if not valid_email(user_data["email"]):
             raise ValueError("Invalid email address.")
 
-        user_response = User.find_user(collection, {"email": user_login_details["email"]})
+        user_response = User.find_user(collection, {"email": user_data["email"]})
 
-        if user_response and pbkdf2_sha256.verify(user_login_details["password"], user_response["password"]):
+        if user_response and pbkdf2_sha256.verify(user_data["password"], user_response["password"]):
             # check if user exists & if the password in the database is correct hash of the password
             user_id = json.dumps(user_response['_id'], default=json_util.default)
             access_token = encode_access_token(user_id, user_response["email"])

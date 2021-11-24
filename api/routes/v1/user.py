@@ -2,6 +2,7 @@ from api.controllers.token import refresh
 from api.seed.seeder import seed
 from api.database.db import DataBase
 from api.controllers.user import *
+from api.validations import *
 
 user_blueprint = Blueprint("user", __name__)
 collection = DataBase.get_instance()
@@ -53,7 +54,7 @@ def get_single_message(data, **kwargs):
 
 @user_blueprint.route('/messages/<string:messageId>', methods=['DELETE'])
 @authorize_required
-def delete_message(data, **kwargs):
+def delete(data, **kwargs):
     """
     Delete specific message by id
     Postman exam: WEB_ROUTE/messages/MESSAGE_ID_FROM_MONGO_DB
@@ -66,35 +67,39 @@ def delete_message(data, **kwargs):
 
 @user_blueprint.route('/messages', methods=['POST'])
 @authorize_required
-def set_message(data):
+@validate_request("message", "create")
+def set_message(user_details, message):
     """
     Post message
     Postman exam: WEB_ROUTE/messages
-    :param data: user details
+    :param user_details: user details
+    :param message: user message
     :return: message id
     """
-    user_id = json.loads(data["user_id"])["$oid"]
-    return write_message(collection, user_id)
+    user_id = json.loads(user_details["user_id"])["$oid"]
+    return write_message(collection, user_id, message)
 
 
 @user_blueprint.route('/user', methods=['POST'])
-def set_user():
+@validate_request("user", "register")
+def set_user(user_data):
     """
     signup
     Postman exam: WEB_ROUTE/user
     :return:
     """
-    return signup(collection)
+    return signup(collection, user_data)
 
 
 @user_blueprint.route('/oauth/login', methods=['POST'])
-def login_user():
+@validate_request("user", "login")
+def login_user(user_data):
     """
     Login
     Postman exam: WEB_ROUTE/auth/login?email=VALID_EMAIL&password=PASSWORD
     :return: user details
     """
-    return login(collection)
+    return login(collection, user_data)
 
 
 @user_blueprint.route('/oauth/logout', methods=['POST'])

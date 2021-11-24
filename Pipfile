@@ -17,8 +17,10 @@ jose = "*"
 datetime = "*"
 uuid = "*"
 mongoengine = "*"
+cerberus = "*"
 
 [dev-packages]
+pytest = "*"
 
 [requires]
 python_version = "3.7"

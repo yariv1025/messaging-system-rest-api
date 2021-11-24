@@ -1,0 +1,18 @@
+{
+  "create": [
+    {
+      "sender": {
+        "type": "string"
+      },
+      "receiver": {
+        "type": "string"
+      },
+      "subject": {
+        "type": "string"
+      },
+      "message": {
+        "type": "string"
+      }
+    }
+  ]
+}

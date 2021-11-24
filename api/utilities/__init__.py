@@ -61,7 +61,7 @@ def valid_email(email):
     :param email: user email address
     :return: True or False
     """
-    regex = '^[a-z0-9]+[\._]?[a-z0-9]+[@]\w+[.]\w{2,3}$'
+    regex = '^\w+@[a-zA-Z_]+?.[a-zA-Z]{2,3}$'
     return True if re.match(regex, email) is not None else False
 
 

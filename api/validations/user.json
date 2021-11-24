@@ -1,0 +1,30 @@
+{
+  "register": [
+    {
+      "first_name": {
+        "type": "string"
+      },
+      "last_name": {
+        "type": "string"
+      },
+      "email": {
+        "type": "string"
+      },
+      "password": {
+        "type": "string"
+      }
+    }
+  ],
+
+  "login": [
+    {
+      "email": {
+        "type": "string"
+      },
+      "password": {
+        "type": "string"
+      }
+    }
+  ]
+
+}
