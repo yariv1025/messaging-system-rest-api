@@ -2,12 +2,15 @@ import datetime
 import uuid
 import json
 import config
+import re
 
 from flask import Response, request, Blueprint
 from bson import json_util
 from pytz import timezone, UTC
 from functools import wraps
 from jose import jwt
+
+from api.database.blocklist import blocklist
 
 utilities_blueprint = Blueprint("utilities", __name__)
 conf = config.Config()
@@ -58,12 +61,8 @@ def valid_email(email):
     :param email: user email address
     :return: True or False
     """
-    import re
     regex = '^[a-z0-9]+[\._]?[a-z0-9]+[@]\w+[.]\w{2,3}$'
-    if re.match(regex, email) is not None:
-        return True
-    else:
-        return False
+    return True if re.match(regex, email) is not None else False
 
 
 def split_data(message):
@@ -109,9 +108,15 @@ def authorize_required(f):
 
     @wraps(f)
     def decorated(*args, **kwargs):
-        access_token = request.headers['Authorization'].split()[1]
+
         try:
+            access_token = request.headers['Authorization'].split()[1]
+
+            if is_access_token_blocked(access_token):
+                return json_resp({"message": "Token is invalid"}, 401)
+
             claim = jwt.decode(access_token, conf.SECRET_KEY)
+
         except Exception as e:
             return json_resp({"message": "Token is invalid", "exception": str(e)}, 401)
 
@@ -154,7 +159,7 @@ def encode_refresh_token(user_id, email):
 
 def refresh_access_token(refresh_token):
     """
-    If the refresh_token is still valid, create a new access_token and return it
+    If the refresh is still valid, create a new access_token and return it
     :param refresh_token: refresh token
     :return: user details & new access token
     """
@@ -170,3 +175,12 @@ def refresh_access_token(refresh_token):
                           "error": str(e)}, 403)
 
     return resp
+
+
+def is_access_token_blocked(token):
+    """
+    Check if the access token is blocked
+    :param token: access token
+    :return: True or False
+    """
+    return True if token in blocklist else False

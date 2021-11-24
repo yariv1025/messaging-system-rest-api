@@ -4,7 +4,7 @@ from werkzeug.exceptions import BadRequestKeyError
 from api.utilities import refresh_access_token, json_resp
 
 
-def refresh_token():
+def refresh():
     """
     Refresh access token
     :return: new access token

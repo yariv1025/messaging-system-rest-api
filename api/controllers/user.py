@@ -7,7 +7,108 @@ from api.models.user import User
 from api.utilities import split_data, valid_email
 
 
-def signup_user(collection):
+def read_all_messages(collection, user_id):
+    """
+    Read all messages OR all unread messages.
+    :param collection: db collection
+    :param user_id: user id
+    :return: messages as JSON
+    """
+    try:
+        data = request.args.get('only_unread')
+
+        if data == 'False' or data == 'false':
+            only_unread = False
+        elif data == 'True' or data == 'true':
+            only_unread = True
+        else:
+            raise ValueError("Invalid parameter. only_unread parameter should be True or False.")
+
+        messages = User.read_messages(collection, user_id, only_unread)
+
+        if messages is not None:
+            User.update_is_read_flag(collection, messages)
+            return json_resp([message for message in messages], 200)
+        return json_resp([], 404)
+
+    except BadRequestKeyError as e:
+        return json_resp({"message": "Missing parameter", "exception": str(e)}, 400)
+
+    except Exception as e:
+        return json_resp({"message": "Error", "exception": str(e)}, 500)
+
+
+def read_message(collection, message_id, user_id):
+    """
+    Read a message.
+    :param collection: db collection
+    :param message_id: message id
+    :param user_id: user id
+    :return: message object as JSON
+    """
+
+    try:
+        message = User.read_message(collection, message_id)
+
+        # Message found & it belong to user
+        if message is not None and message["sender_id"] == user_id:
+            User.update_is_read_flag(collection, [message])
+            return json_resp(message, 200)
+        return json_resp("Forbidden", 403)
+
+    except Exception as e:
+        return json_resp({"message": "Error", "exception": str(e)}, 500)
+
+
+def delete_message(collection, message_id, user_id):
+    """
+    Delete a message.
+    :param collection: db collection
+    :param message_id: message id
+    :param user_id: user id
+    :return: the number of deleted messages
+    """
+    try:
+        message = User.read_message(collection, message_id)
+
+        if message is not None and message["sender_id"] == user_id:
+            # Message found & message belong to user
+            response = User.delete_message(collection, message_id)
+            return json_resp(response.deleted_count, 200)
+        else:
+            return json_resp("Message not found!", 404)
+
+    except Exception as e:
+        return json_resp({"message": "Error", "exception": str(e)}, 500)
+
+
+def write_message(collection, sender_id):
+    """
+    Create & send a message.
+    :param collection: db collection
+    :param sender_id: user id
+    :return: message id
+    """
+    try:
+        data = request.get_data(as_text=True)
+        data = split_data(data)
+
+        message = Message(sender_id,
+                          data['sender'],
+                          data['receiver'],
+                          data['subject'],
+                          data['message'])
+
+        return User.send_message(collection, message)
+
+    except (BadRequestKeyError, IndexError) as e:
+        return json_resp({"message": "Missing parameter", "exception": str(e)}, 400)
+
+    except Exception as e:
+        return json_resp({"message": "Error", "exception": str(e)}, 500)
+
+
+def signup(collection):
     """
     Getting request data & creating user object
     :param collection: db collection
@@ -33,107 +134,7 @@ def signup_user(collection):
         return json_resp({"message": "Error", "exception": str(e)}, 500)
 
 
-def write_user_message(collection, sender_id):
-    """
-    Create & send a message.
-    :param collection: db collection
-    :param sender_id: user id
-    :return: message id
-    """
-    try:
-        data = split_data(request.get_data(as_text=True))
-
-        message = Message(sender_id,
-                          data['sender'],
-                          data['receiver'],
-                          data['subject'],
-                          data['message'])
-
-        return User.send_message(collection, message)
-
-    except BadRequestKeyError as e:
-        return json_resp({"message": "Missing parameter", "exception": str(e)}, 400)
-
-    except Exception as e:
-        return json_resp({"message": "Error", "exception": str(e)}, 500)
-
-
-def read_user_message(collection, message_id, user_id):
-    """
-    Read a message.
-    :param collection: db collection
-    :param message_id: message id
-    :param user_id: user id
-    :return: message object as JSON
-    """
-
-    try:
-        message = User.read_message(collection, message_id)
-
-        # Message found & it belong to user
-        if message is not None and message["sender_id"] == user_id:
-            User.update_is_read_flag(collection, [message])
-            return json_resp(message, 200)
-        return json_resp("Forbidden", 403)
-
-    except Exception as e:
-        return json_resp({"message": "Error", "exception": str(e)}, 500)
-
-
-def read_all_user_messages(collection, user_id):
-    """
-    Read all messages OR all unread messages.
-    :param collection: db collection
-    :param user_id: user id
-    :return: messages as JSON
-    """
-    try:
-        only_unread = request.args.get('only_unread')
-
-        if only_unread == 'False' or only_unread == 'false':
-            only_unread = False
-        elif only_unread == 'True' or only_unread == 'true':
-            only_unread = True
-        else:
-            raise ValueError("Invalid parameter. only_unread parameter should be True or False.")
-
-        messages = User.read_messages(collection, user_id, only_unread)
-
-        if messages is not None:
-            User.update_is_read_flag(collection, messages)
-            return json_resp([message for message in messages], 200)
-        return json_resp([], 404)
-
-    except BadRequestKeyError as e:
-        return json_resp({"message": "Missing parameter", "exception": str(e)}, 400)
-
-    except Exception as e:
-        return json_resp({"message": "Error", "exception": str(e)}, 500)
-
-
-def delete_user_message(collection, message_id, user_id):
-    """
-    Delete a message.
-    :param collection: db collection
-    :param message_id: message id
-    :param user_id: user id
-    :return: the number of deleted messages
-    """
-    try:
-        message = User.read_message(collection, message_id)
-
-        if message is not None and message["sender_id"] == user_id:
-            # Message found & message belong to user
-            response = User.delete_message(collection, message_id)
-            return json_resp(response.deleted_count, 200)
-        else:
-            return json_resp("Message not found!", 404)
-
-    except Exception as e:
-        return json_resp({"message": "Error", "exception": str(e)}, 500)
-
-
-def login_user(collection):
+def login(collection):
     """
     Login a user.
     :param collection: db collection
@@ -157,7 +158,7 @@ def login_user(collection):
                 'status': 'success',
                 'message': 'Successfully registered.',
                 "access_token": access_token,
-                "refresh_token": refresh_token
+                "refresh": refresh_token
             }
 
             return json_resp(response, 200)
@@ -170,21 +171,17 @@ def login_user(collection):
         return json_resp({"message": "Error", "exception": str(e)}, 500)
 
 
-def logout_user():
+def logout():
     """
     Logout a user.
     :return: user details as JSON
     """
-    pass
-    # try:
-    #     access_token = request.headers['Authorization'].split()[1]
-    #     refresh_token = request.headers['Refresh-Token']
-    #
-    #     if utilities.is_valid_token(access_token):
-    #         utilities.revoke_token(access_token)
-    #         utilities.revoke_token(refresh_token)
-    #         return json_resp({"message": "Successfully logged out"}, 200)
-    #     return json_resp({"message": "Invalid token"}, 403)
-    #
-    # except Exception as e:
-    #     return json_resp({"message": "Server error", "exception": str(e)}, 500)
+
+    try:
+        access_token = request.headers['Authorization'].split()[1]
+
+    except (BadRequestKeyError, Exception) as e:
+        return json_resp({"message": "Error", "exception": str(e)}, 400)
+
+    blocklist.add(access_token)
+    return json_resp({"message": "Successfully logged out"}, 200)
