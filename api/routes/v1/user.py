@@ -28,47 +28,44 @@ def seed_db():
 
 @user_blueprint.route('/messages', methods=['GET'])
 @authorize_required
-def get_messages(data):
+def get_messages(user_data):
     """
     Get all read messages / unread messages
     Postman exam: WEB_ROUTE/messages?only_unread=True
-    :param data: user details
+    :param user_data: user details
     :return: all messages for a specific user
     """
-    user_id = json.loads(data["user_id"])["$oid"]
-    return read_all_messages(collection, user_id)
+    return read_all_messages(collection, user_data)
 
 
 @user_blueprint.route('/messages/<string:messageId>', methods=['GET'])
 @authorize_required
-def get_single_message(data, **kwargs):
+def get_single_message(user_data, **kwargs):
     """
     Get message by id
     Postman exam: WEB_ROUTE/messages/MESSAGE_ID_FROM_MONGO_DB
-    :param data: user details
+    :param user_data: user details
     :return: Details of one message
     """
-    user_id = json.loads(data["user_id"])["$oid"]
-    return read_message(collection, kwargs["messageId"], user_id)
+    return read_message(collection, kwargs["messageId"], user_data)
 
 
 @user_blueprint.route('/messages/<string:messageId>', methods=['DELETE'])
 @authorize_required
-def delete(data, **kwargs):
+def delete(user_data, **kwargs):
     """
     Delete specific message by id
     Postman exam: WEB_ROUTE/messages/MESSAGE_ID_FROM_MONGO_DB
-    :param data: data details
+    :param user_data: data details
     :return: response / feedback
     """
-    user_id = json.loads(data["user_id"])["$oid"]
-    return delete_message(collection, kwargs["messageId"], user_id)
+    return delete_message(collection, kwargs["messageId"], user_data)
 
 
 @user_blueprint.route('/messages', methods=['POST'])
 @authorize_required
 @validate_request("message", "create")
-def set_message(user_details, message):
+def set_message(user_data, message):
     """
     Post message
     Postman exam: WEB_ROUTE/messages
@@ -76,8 +73,7 @@ def set_message(user_details, message):
     :param message: user message
     :return: message id
     """
-    user_id = json.loads(user_details["user_id"])["$oid"]
-    return write_message(collection, user_id, message)
+    return write_message(collection, user_data, message)
 
 
 @user_blueprint.route('/user', methods=['POST'])

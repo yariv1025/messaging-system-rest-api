@@ -9,19 +9,43 @@ from api.utilities import split_data, valid_email
 from api.validations import get_blueprint_schema
 
 
-def read_all_messages(collection, user_id):
+def read_message(collection, message_id, user_data):
+    """
+    Read a message.
+    :param collection: db collection
+    :param message_id: message id
+    :param user_data: user details
+    :return: message object as JSON
+    """
+
+    try:
+        user_id = json.loads(user_data["user_id"])["$oid"]
+        message = User.read_message(collection, message_id)
+
+        # Message found & it belong to user
+        if message is not None and message["sender_id"] == user_id:
+            User.update_is_read_flag(collection, [message])
+            return json_resp(message, 200)
+        return json_resp("Forbidden", 403)
+
+    except Exception as e:
+        return json_resp({"message": "Error", "exception": str(e)}, 500)
+
+
+def read_all_messages(collection, user_data):
     """
     Read all messages OR all unread messages.
     :param collection: db collection
-    :param user_id: user id
+    :param user_data: user details
     :return: messages as JSON
     """
     try:
-        data = request.args.get('only_unread')
+        user_id = json.loads(user_data["user_id"])["$oid"]
+        param = request.args.get('only_unread')
 
-        if data == 'False' or data == 'false':
+        if param == 'False' or param == 'false':
             only_unread = False
-        elif data == 'True' or data == 'true':
+        elif param == 'True' or param == 'true':
             only_unread = True
         else:
             raise ValueError("Invalid parameter. only_unread parameter should be True or False.")
@@ -40,37 +64,16 @@ def read_all_messages(collection, user_id):
         return json_resp({"message": "Error", "exception": str(e)}, 500)
 
 
-def read_message(collection, message_id, user_id):
-    """
-    Read a message.
-    :param collection: db collection
-    :param message_id: message id
-    :param user_id: user id
-    :return: message object as JSON
-    """
-
-    try:
-        message = User.read_message(collection, message_id)
-
-        # Message found & it belong to user
-        if message is not None and message["sender_id"] == user_id:
-            User.update_is_read_flag(collection, [message])
-            return json_resp(message, 200)
-        return json_resp("Forbidden", 403)
-
-    except Exception as e:
-        return json_resp({"message": "Error", "exception": str(e)}, 500)
-
-
-def delete_message(collection, message_id, user_id):
+def delete_message(collection, message_id, user_data):
     """
     Delete a message.
     :param collection: db collection
     :param message_id: message id
-    :param user_id: user id
+    :param user_data: user details
     :return: the number of deleted messages
     """
     try:
+        user_id = json.loads(user_data["user_id"])["$oid"]
         message = User.read_message(collection, message_id)
 
         if message is not None and message["sender_id"] == user_id:
@@ -84,16 +87,17 @@ def delete_message(collection, message_id, user_id):
         return json_resp({"message": "Error", "exception": str(e)}, 500)
 
 
-def write_message(collection, sender_id, message):
+def write_message(collection, user_data, message):
     """
     Create & send a message.
     :param collection: db collection
-    :param sender_id: user id
+    :param user_data: user details
     :param message: user message
     :return: message id
     """
     try:
-        message_obj = Message(sender_id,
+        user_id = json.loads(user_data["user_id"])["$oid"]
+        message_obj = Message(user_id,
                               message['sender'],
                               message['receiver'],
                               message['subject'],
@@ -112,6 +116,7 @@ def signup(collection, user_data):
     """
     Getting request data & creating user object
     :param collection: db collection
+    :param user_data: user details
     :return: user object as JSON
     """
     try:
@@ -136,6 +141,7 @@ def login(collection, user_data):
     """
     Login a user.
     :param collection: db collection
+    :param user_data: user details
     :return: user details as JSON
     """
     try:
