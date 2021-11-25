@@ -69,7 +69,7 @@ def set_message(user_data, message):
     """
     Post message
     Postman exam: WEB_ROUTE/messages
-    :param user_details: user details
+    :param user_data: user details
     :param message: user message
     :return: message id
     """

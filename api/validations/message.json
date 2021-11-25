@@ -2,10 +2,16 @@
   "create": [
     {
       "sender": {
-        "type": "string"
+        "type": "string",
+        "anyof_regex": [
+          "^[A-Z][a-z]+$"
+        ]
       },
       "receiver": {
-        "type": "string"
+        "type": "string",
+        "anyof_regex": [
+          "^[A-Z][a-z]+$"
+        ]
       },
       "subject": {
         "type": "string"
