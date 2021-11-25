@@ -118,9 +118,3 @@ def refresh_token():
     :return: new access token
     """
     return refresh()
-
-
-# TODO: fix logout function
-# TODO: Refactoring message calls and Object creation
-# TODO: Refactoring user model calls and methods
-# TODO: Create tests
