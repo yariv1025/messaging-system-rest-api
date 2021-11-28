@@ -3,6 +3,7 @@
 > ### Requirements:
 > * Python 3.7
 > * MongoDB
+> * PyCharm IDE (recommended)
 ___
 
 ### Run the app:
@@ -10,24 +11,40 @@ ___
 ```shell
 git clone git@github.com:yariv1025/messaging-system-rest-api.git
 ```
-#### 2) Edit configuration:
->* Install pipenv 
->* Install all dependencies from pipfile
 
-#### 3) Edit configuration:
->* Add new configuration:
->    * Press + button  
->       * Python
->           * name: APP
->           * Script path: "YOURS-PATH"\messaging-system-rest-api\src\app.py
->           * Environment variables: ;FLASK_ENV=development;FLASK_APP=./src/app.py;MONGO_USER="YOURS-USERNAME";MONGO_PASS="YOURS-PASSWORD";MONGO_URI="YOURS_DB_URI";SECRET_KEY="YOUR_SECRET_KEY"
+
+#### 2) Install dependencies:
+```shell
+pip install pipenv            #Install pipenv and create the virtual environment
+pipenv install                #Install packages
+pipenv install all --dev      #Install all dev dependencies
+pipenv lock                   #Generate a lockfile
+```
+
+
+#### 3) Create your MongoDB atlas cluster:
+* Use [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) website to create your own database and cluster
+
+
+#### 4) Edit configuration:
+* Add new configuration:
+    * Press + button  
+       * Python
+           * name: APP
+           * Script path: "YOURS-PATH"\messaging-system-rest-api\src\app.py
+           * Environment variables: ;FLASK_ENV=development;FLASK_APP=./src/app.py;MONGO_USER="YOURS-USERNAME";MONGO_PASS="YOURS-PASSWORD";MONGO_URI="YOURS_DB_URI";SECRET_KEY="YOUR_SECRET_KEY"
   
-*Complete mongo URI should look like: f'mongodb+srv://{username}:{password}{mongo_uri}'
-###### Attention: You must change MONGO_USER, MONGO_PASS, YOURS-PATH, etc. variables.
+* Complete MongoDB URI should look like:   f'mongodb+srv://{username}:{password}{mongo_uri}'
+##### Attention:    You must change MONGO_USER, MONGO_PASS, YOURS-PATH, etc. variables.
+
 ___
 
-### Execute requests using Postman(use the attached PDF file):
-* First, seed your db with the seed route.
-  <br>
->###### * "Seed" data could be found in "src/seed/INIT_DATA.json".
+
+### Execute requests using Postman:
+* Open Postman
+* Create API collection
+* Create the CRUD requests
+
+###### * You can check your requests on [Heroku demo server](https://restmessagingsystem.herokuapp.com/)
+###### * "Seed" data could be found in the next path: "YOUR_PROJECT_PATH/api/static/INIT_DATA.json".
   

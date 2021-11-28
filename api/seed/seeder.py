@@ -1,30 +1,32 @@
 import json
 
-from src.models.users import User
-from src.models.messages import Message
+from api.database.db import DataBase
+from api.models.user import User
+from api.models.message import Message
+
+collection = DataBase.get_instance()
 
 
-def seed(collection):
+def seed():
     """
     Create users() return user id list
     create_messages() takes that list and insert each id to the correct message object
-    :param collection:
-    :return:
+    :return: Status code
     """
     user_id = []
-    user_id = create_users(collection)
-    create_messages(collection, user_id)
+    user_id = create_users()
+    create_messages(user_id)
+    return {"status": "success"}, 200
 
 
-def create_users(collection):
+def create_users():
     """
     Seeding users data to users collection
-    :param collection: db collection
     """
 
     try:
         user_id = []
-        with open('./src/seed/INIT_DATA.json') as f:
+        with open('../static/INIT_DATA.json') as f:
             init_collections = json.load(f)
             users = init_collections["users"]
 
@@ -37,18 +39,17 @@ def create_users(collection):
         f.close()
         return user_id
 
-    except (IOError, EOFError) as e:
-        print("Error. {}".format(e.args[-1]))
+    except (IOError, EOFError, FileNotFoundError) as e:
+        return "Error. {}".format(e.args[-1])
 
 
-def create_messages(collection, user_id):
+def create_messages(user_id):
     """
     Seeding messages data to messages collection
-    :param collection: db collection
     :param user_id: users id's list
     """
     try:
-        with open('./src/seed/INIT_DATA.json') as f:
+        with open('../static/INIT_DATA.json') as f:
             init_collections = json.load(f)
             messages = init_collections["messages"]
 
@@ -59,5 +60,5 @@ def create_messages(collection, user_id):
 
         f.close()
 
-    except (IOError, EOFError) as e:
+    except (IOError, EOFError, FileNotFoundError) as e:
         print("Error. {}".format(e.args[-1]))

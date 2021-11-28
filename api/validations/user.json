@@ -1,0 +1,40 @@
+{
+  "register": [
+    {
+      "first_name": {
+        "type": "string",
+        "anyof_regex": [
+          "^[A-Z][a-z]+$"
+        ]
+      },
+      "last_name": {
+        "type": "string",
+        "anyof_regex": [
+          "^[A-Z][a-z]+$"
+        ]
+      },
+      "email": {
+        "type": "string",
+        "anyof_regex": [
+          "^\\w+@[a-zA-Z_]+?.[a-zA-Z]{2,3}$"
+        ]
+      },
+      "password": {
+        "type": "string"
+      }
+    }
+  ],
+  "login": [
+    {
+      "email": {
+        "type": "string",
+        "anyof_regex": [
+          "^\\w+@[a-zA-Z_]+?.[a-zA-Z]{2,3}$"
+        ]
+      },
+      "password": {
+        "type": "string"
+      }
+    }
+  ]
+}
