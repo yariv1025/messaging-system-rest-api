@@ -101,11 +101,11 @@ ___
                 * message_id: <>
   
   > * GET: <br>
-  >   * Get all messages | WEB_ROUTE/messages <br>
-  >   * Authorization Bearer Token filed: access_token. <br>
-  >   * Response: <br>
-  >       * Status: 200 <br>
-  >       * Body:
+    >   * Get all messages | WEB_ROUTE/messages <br>
+    >   * Authorization Bearer Token filed: access_token. <br>
+    >   * Response: <br>
+    >       * Status: 200 <br>
+    >       * Body:
                 * message_id: <>
                 * sender_id: <>
                 * sender_name: <>
@@ -115,11 +115,11 @@ ___
                 * created_at: <>
                 * is_read: <>
   
-  >   * Get message by id | WEB_ROUTE/messages/<message_id> <br>
-  >   * Authorization Bearer Token filed: access_token. <br>
-  >   * Response: <br>
-  >       * Status: 200 <br>
-  >       * Body:
+    >   * Get message by id | WEB_ROUTE/messages/<message_id> <br>
+    >   * Authorization Bearer Token filed: access_token. <br>
+    >   * Response: <br>
+    >       * Status: 200 <br>
+    >       * Body:
                 * message_id: <>
                 * sender_id: <>
                 * sender_name: <>
@@ -130,11 +130,11 @@ ___
                 * is_read: <>
   
   > * DELETE:
-  >  * Delete message | WEB_ROUTE/messages/<message_id> <br>
-  >  * Authorization Bearer Token filed: access_token. <br>
-  >  * Response: <br>
-  >      * Status: 200 <br>
-  >      * Body: number of deleted messages
+    >  * Delete message | WEB_ROUTE/messages/<message_id> <br>
+    >  * Authorization Bearer Token filed: access_token. <br>
+    >  * Response: <br>
+    >      * Status: 200 <br>
+    >      * Body: number of deleted messages
   
 
 [comment]: <> (![img.png]&#40;img.png&#41;)
