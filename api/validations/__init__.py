@@ -1,9 +1,7 @@
 import json
 from functools import wraps
-
-from cerberus import schema_registry, Validator
-from cerberus.errors import ValidationError
-from flask import jsonify, request
+from cerberus import Validator
+from flask import request
 
 from api.utilities import json_resp, split_data
 

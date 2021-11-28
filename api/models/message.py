@@ -1,4 +1,6 @@
 from bson import ObjectId
+
+from api.database.db import DataBase
 from api.utilities import now_datetimeUTC, handle_query
 
 
@@ -22,12 +24,11 @@ class Message:
             "is_read": False
         }
 
-    def save(self, collection):
+    def save(self):
         """
         Saving single message into db
-        :param collection: db collection
         """
-        return handle_query(collection.messages.insert_one(self.to_json()))
+        return handle_query(DataBase.save_item(self.to_json(), "messages"))
 
     def to_json(self):
         """
@@ -36,49 +37,45 @@ class Message:
         return self.defaults.copy()
 
     @staticmethod
-    def get_all_messages(collection, user_id):
+    def get_all_messages(user_id):
         """
-        Querying all user messages
-        :param collection: db collection
+        Calling to the db to get all messages for a specific user
         :param user_id: user id
         :return: all messages for a specific user
         """
-        return handle_query(list(collection.messages.find({"sender_id": user_id})))
+        return handle_query(list(DataBase.get_all_items({"sender_id": user_id}, "messages")))
 
     @staticmethod
-    def get_unread_messages(collection, user_id):
+    def get_unread_messages(user_id):
         """
-        Querying all user unread messages from db
-        :param collection: db collection
+        Calling to the db to get all unread messages for a specific user
         :param user_id: user id
         :return: all unread messages for a specific user
         """
-        return handle_query(list(collection.messages.find({"sender_id": user_id, "is_read": False})))
+        return handle_query(list(DataBase.get_all_items({"sender_id": user_id, "is_read": False}, "messages")))
 
     @staticmethod
-    def get_message(collection, messageId):
+    def get_message(message_id):
         """
-        Query message by messageId
-        :param collection: db collection
-        :param messageId: message identification number
+        Calling to the db to get message by messageId
+        :param message_id: message identification number
         :return: Details of one message
         """
-        return handle_query(collection.messages.find_one({"_id": ObjectId(messageId)}))
+        return handle_query(DataBase.get_item_by_filter({"_id": ObjectId(message_id)}, "messages"))
 
     @staticmethod
-    def delete(collection, messageId):
+    def delete(messageId):
         """
-        Deleting message by messageId
-        :param collection: db collection
+        Calling to the db to delete message by messageId
         :param messageId: message id
         """
-        return handle_query(collection.messages.delete_one({"_id": ObjectId(messageId)}))
+        return handle_query(DataBase.delete_item({"_id": ObjectId(messageId)}, "messages"))
 
     @staticmethod
-    def update_message(collection, desired_fields):
+    def update(desired_fields):
         """
-        :param collection: db collection
+        Calling to the db to update desired fields in a message
         :param desired_fields: key=field to update, value=data to be updated
         :return: the original message (before update)
         """
-        return handle_query(collection.messages.find_one_and_update(desired_fields[0], desired_fields[1]))
+        return handle_query(DataBase.update_item(desired_fields, "messages"))

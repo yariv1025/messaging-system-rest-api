@@ -1,12 +1,8 @@
-from flask import Blueprint
-
-from api.controllers.user import *
-from api.database.db import DataBase
-from api.utilities import authorize_required
+from api.controllers.message import *
 from api.validations import validate_request
+from api.utilities import authorize_required
 
 message_blueprint = Blueprint('message', __name__)
-collection = DataBase.get_instance()
 
 
 @message_blueprint.route('/messages', methods=['GET'])
@@ -18,7 +14,7 @@ def get_messages(user_data):
     :param user_data: user details
     :return: all messages for a specific user
     """
-    return read_all_messages(collection, user_data)
+    return read_all_messages(user_data)
 
 
 @message_blueprint.route('/messages/<string:messageId>', methods=['GET'])
@@ -30,7 +26,7 @@ def get_single_message(user_data, **kwargs):
     :param user_data: user details
     :return: Details of one message
     """
-    return read_message(collection, kwargs["messageId"], user_data)
+    return read_message(kwargs["messageId"], user_data)
 
 
 @message_blueprint.route('/messages/<string:messageId>', methods=['DELETE'])
@@ -42,7 +38,7 @@ def delete(user_data, **kwargs):
     :param user_data: data details
     :return: response / feedback
     """
-    return delete_message(collection, kwargs["messageId"], user_data)
+    return delete_message(kwargs["messageId"], user_data)
 
 
 @message_blueprint.route('/messages', methods=['POST'])
@@ -56,4 +52,4 @@ def set_message(user_data, message):
     :param message: user message
     :return: message id
     """
-    return write_message(collection, user_data, message)
+    return write_message(user_data, message)
