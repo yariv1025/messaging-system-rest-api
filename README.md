@@ -44,8 +44,7 @@ ___
 * Open Postman
 * Create API collection
 * Create the next CRUD requests:
-    > * POST: <br>
-       
+    > * POST:
     >  * Create a new user | WEB_ROUTE/user <br>
     >    * Body fields: first_name, last_name, email, password <br>
     >    * Response: <br>
