@@ -57,8 +57,6 @@ ___
                 * password: <>
                 * created_at: <>
                 * last_login: <>
-    <br>
-    <br>
  
     >  * Login | WEB_ROUTE/login <br>
     >    * Body fields: email, password <br>
@@ -69,18 +67,14 @@ ___
                 * message: <>
                 * access_token: <>
                 * refresh_token: <>
-    <br>
-    <br>
-
+  
     >  * Logout | WEB_ROUTE/oauth/logout <br>
     >    * Authorization Bearer Token filed: access_token <br>
     >    * Response: <br>
     >        * Status: 200 <br>
     >        * Body:
                 * message: <>
-    <br>
-    <br>
-  
+
     >  * Refresh access token | WEB_ROUTE/oauth/refresh <br>
     >    * Authorization Bearer Token filed: access_token. <br>
     >    * Body: <br>
@@ -93,8 +87,6 @@ ___
                 * email: <>
                 * exp: <>
                 * new_access_token: <>
-    <br>
-    <br>
   
     >  * Write message | WEB_ROUTE/messages <br>
     >    * Authorization Bearer Token filed: access_token. <br>
