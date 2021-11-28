@@ -1,9 +1,10 @@
 from flask import Blueprint
+from api.seed.seeder import seed
 
-homepage_blueprint = Blueprint("homepage", __name__)
+index_blueprint = Blueprint("index", __name__)
 
 
-@homepage_blueprint.route('/')
+@index_blueprint.route('/')
 def home_page():
     """
     Home page
@@ -11,3 +12,11 @@ def home_page():
     """
     return "Messaging System - REST API!"
 
+
+@index_blueprint.route('/seed', methods=['POST'])
+def seed_db():
+    """
+    Performs seeding to mongo db
+    :return: message response
+    """
+    return seed()

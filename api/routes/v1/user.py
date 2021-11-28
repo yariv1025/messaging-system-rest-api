@@ -1,10 +1,7 @@
-from api.controllers.token import refresh
-from api.database.db import DataBase
 from api.controllers.user import *
-from api.validations import *
+from api.validations import validate_request
 
 user_blueprint = Blueprint("user", __name__)
-collection = DataBase.get_instance()
 
 
 @user_blueprint.route('/user', methods=['POST'])
@@ -15,7 +12,7 @@ def set_user(user_data):
     Postman exam: WEB_ROUTE/user
     :return:
     """
-    return signup(collection, user_data)
+    return signup(user_data)
 
 
 @user_blueprint.route('/oauth/login', methods=['POST'])
@@ -26,7 +23,7 @@ def login_user(user_data):
     Postman exam: WEB_ROUTE/auth/login?email=VALID_EMAIL&password=PASSWORD
     :return: user details
     """
-    return login(collection, user_data)
+    return login(user_data)
 
 
 @user_blueprint.route('/oauth/logout', methods=['POST'])
@@ -42,10 +39,4 @@ def logout_user(data):
     return logout()
 
 
-@user_blueprint.route('/oauth/refresh', methods=['POST'])
-def refresh_token():
-    """
-    Postman exam: WEB_ROUTE/oauth/token
-    :return: new access token
-    """
-    return refresh()
+# TODO: Create an independent Database
