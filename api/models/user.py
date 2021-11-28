@@ -149,7 +149,7 @@ class User:
 
             if not is_exists:
                 response = user.save_user(collection)
-                return json_resp(response.inserted_id, 200)
+                return json_resp(response.inserted_id, 201)
             return is_exists
 
         except Exception as e:

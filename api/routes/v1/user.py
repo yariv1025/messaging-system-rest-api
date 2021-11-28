@@ -42,7 +42,7 @@ def logout_user(data):
     return logout()
 
 
-@user_blueprint.route('/oauth/token', methods=['POST'])
+@user_blueprint.route('/oauth/refresh', methods=['POST'])
 def refresh_token():
     """
     Postman exam: WEB_ROUTE/oauth/token
