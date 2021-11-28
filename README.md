@@ -102,8 +102,8 @@ ___
   
   > * GET: <br>
     >   * Get all messages | WEB_ROUTE/messages <br>
-    >   * Authorization Bearer Token filed: access_token. <br>
-    >   * Response: <br>
+    >     * Authorization Bearer Token filed: access_token. <br>
+    >     * Response: <br>
     >       * Status: 200 <br>
     >       * Body:
                 * message_id: <>
@@ -116,8 +116,8 @@ ___
                 * is_read: <>
   
     >   * Get message by id | WEB_ROUTE/messages/<message_id> <br>
-    >   * Authorization Bearer Token filed: access_token. <br>
-    >   * Response: <br>
+    >     * Authorization Bearer Token filed: access_token. <br>
+    >     * Response: <br>
     >       * Status: 200 <br>
     >       * Body:
                 * message_id: <>
@@ -131,8 +131,8 @@ ___
   
   > * DELETE:
     >  * Delete message | WEB_ROUTE/messages/<message_id> <br>
-    >  * Authorization Bearer Token filed: access_token. <br>
-    >  * Response: <br>
+    >    * Authorization Bearer Token filed: access_token. <br>
+    >    * Response: <br>
     >      * Status: 200 <br>
     >      * Body: number of deleted messages
   
