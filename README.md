@@ -44,7 +44,7 @@ ___
 * Open Postman
 * Create API collection
 * Create the next CRUD requests:
-    >* POST: <br>
+    > * POST: <br>
        
     >  * Create a new user | WEB_ROUTE/user <br>
     >    * Body fields: first_name, last_name, email, password <br>
@@ -60,7 +60,7 @@ ___
                 * last_login: <>
     <br>
     <br>
-  > 
+ 
     >  * Login | WEB_ROUTE/login <br>
     >    * Body fields: email, password <br>
     >    * Response: <br>
@@ -72,7 +72,7 @@ ___
                 * refresh_token: <>
     <br>
     <br>
-  > 
+
     >  * Logout | WEB_ROUTE/oauth/logout <br>
     >    * Authorization Bearer Token filed: access_token <br>
     >    * Response: <br>
