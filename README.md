@@ -115,7 +115,7 @@ ___
                 * created_at: <>
                 * is_read: <>
   
-    >   * Get message by id | WEB_ROUTE/messages/<message_id> <br>
+    >  * Get message by id | WEB_ROUTE/messages/<message_id> <br>
     >     * Authorization Bearer Token filed: access_token. <br>
     >     * Response: <br>
     >       * Status: 200 <br>
