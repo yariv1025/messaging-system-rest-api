@@ -1,7 +1,8 @@
 from bson import ObjectId
 from flask import json
 from werkzeug.exceptions import BadRequestKeyError
-from api.utilities import *
+
+from api.utilities import json_resp, request
 from api.models.message import Message
 
 

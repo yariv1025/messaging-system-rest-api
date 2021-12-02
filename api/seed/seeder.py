@@ -1,10 +1,7 @@
 import json
 
-from api.database.db import DataBase
 from api.models.user import User
 from api.models.message import Message
-
-collection = DataBase.get_instance()
 
 
 def seed():
@@ -33,7 +30,7 @@ def create_users():
         # Create user object for each user in users list and save_user there id in user_id list
         for user in users:
             user = User(user["first_name"], user["last_name"], user["email"], user["password"])
-            response = user.save_user(collection)
+            response = user.save_user()
             user_id.append(response.inserted_id)
 
         f.close()
@@ -56,7 +53,7 @@ def create_messages(user_id):
         for message in messages:
             id_number = user_id.pop()
             message = Message(id_number, message["sender"], message["receiver"], message["subject"], message["message"])
-            message.save(collection)
+            message.save()
 
         f.close()
 

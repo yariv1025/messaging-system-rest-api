@@ -1,4 +1,7 @@
-from api.controllers.user import *
+from flask import Blueprint
+
+from api.controllers.user import signup, login, logout
+from api.utilities import authorize_required
 from api.validations import validate_request
 
 user_blueprint = Blueprint("user", __name__)
@@ -33,10 +36,8 @@ def logout_user(data):
     Postman exam: WEB_ROUTE/oauth/logout
     :return: response
     """
-    # Note: Need to implement Token Revoking/Blocklisting
+    # Note: Need to implement Token Revoking/Blocklisting in mongo
     # Info: https://flask-jwt-extended.readthedocs.io/en/latest/blocklist_and_token_revoking/
     # Info: https://darksun-flask-jwt-extended.readthedocs.io/en/latest/blacklist_and_token_revoking/
     return logout()
 
-
-# TODO: Create an independent Database

@@ -1,7 +1,7 @@
 import config
 
 from flask import Flask, Blueprint
-from api.database.db import DataBase as db
+from api.database.mongo import DataBase as db
 
 
 def create_app():
