@@ -1,6 +1,6 @@
 from passlib.hash import pbkdf2_sha256
-from api.utilities import *
-from api.database.db import DataBase
+from api.utilities import now_datetimeUTC, json_resp
+from api.database.mongo import DataBase
 
 
 class User:

@@ -1,4 +1,6 @@
-from api.controllers.message import *
+from flask import Blueprint
+
+from api.controllers.message import read_all_messages, read_message, delete_message, write_message
 from api.validations import validate_request
 from api.utilities import authorize_required
 

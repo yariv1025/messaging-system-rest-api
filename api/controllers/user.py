@@ -1,7 +1,9 @@
 from flask import json
 from passlib.handlers.pbkdf2 import pbkdf2_sha256
 from werkzeug.exceptions import BadRequestKeyError
-from api.utilities import *
+
+from api.database.blocklist import blocklist
+from api.utilities import json_resp, json_util, encode_access_token, encode_refresh_token, request
 from api.models.user import User
 from api.utilities import valid_email
 

@@ -1,6 +1,6 @@
 from bson import ObjectId
 
-from api.database.db import DataBase
+from api.database.mongo import DataBase
 from api.utilities import now_datetimeUTC, handle_query
 
 
