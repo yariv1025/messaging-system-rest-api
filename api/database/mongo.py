@@ -1,4 +1,7 @@
 from flask_pymongo import PyMongo
+from http import HTTPStatus
+
+from api.errors.errors import APIError
 
 
 class DataBase:
@@ -37,7 +40,7 @@ class DataBase:
             return DataBase.get_instance().get_collection(collection_name).insert_one(item)
 
         except Exception as e:
-            return {"error": str(e)}, 500
+            return APIError(str(e), HTTPStatus.INTERNAL_SERVER_ERROR)
 
     @staticmethod
     def get_item(item, collection_name):
@@ -51,7 +54,7 @@ class DataBase:
             return DataBase.get_instance().get_collection(collection_name).find_one(item)
 
         except Exception as e:
-            return {"error": str(e)}, 500
+            return APIError(str(e), HTTPStatus.INTERNAL_SERVER_ERROR)
 
     @staticmethod
     def update_item(item, collection_name):
@@ -65,7 +68,7 @@ class DataBase:
             return DataBase.get_instance().get_collection(collection_name).find_one_and_update(item[0], item[1], upsert=True)
 
         except Exception as e:
-            return {"error": str(e)}, 500
+            return APIError(str(e), HTTPStatus.INTERNAL_SERVER_ERROR)
 
     @staticmethod
     def delete_item(item, collection_name):
@@ -79,7 +82,7 @@ class DataBase:
             return DataBase.get_instance().get_collection(collection_name).delete_one(item)
 
         except Exception as e:
-            return {"error": str(e)}, 500
+            return APIError(str(e), HTTPStatus.INTERNAL_SERVER_ERROR)
 
     @staticmethod
     def get_all_items(filters, collection_name):
@@ -93,7 +96,7 @@ class DataBase:
             return DataBase.get_instance().get_collection(collection_name).find(filters)
 
         except Exception as e:
-            return {"error": str(e)}, 500
+            return APIError(str(e), HTTPStatus.INTERNAL_SERVER_ERROR)
 
     @staticmethod
     def get_item_by_filter(filters, collection_name):
@@ -107,4 +110,4 @@ class DataBase:
             return DataBase.get_instance().get_collection(collection_name).find_one(filters)
 
         except Exception as e:
-            return {"error": str(e)}, 500
+            return APIError(str(e), HTTPStatus.INTERNAL_SERVER_ERROR)

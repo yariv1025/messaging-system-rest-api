@@ -1,5 +1,7 @@
 from passlib.hash import pbkdf2_sha256
-from api.utilities import now_datetimeUTC, json_resp
+from http import HTTPStatus
+
+from api.utilities import now_datetimeUTC, json_resp, has_exception
 from api.database.mongo import DataBase
 
 
@@ -27,24 +29,18 @@ class User:
         Saving user into db
         :return: user id
         """
-        try:
-            return DataBase.save_item(self.get_user_as_json(), "users")
-
-        except Exception as e:
-            return {"error": str(e)}, 500
+        response = DataBase.save_item(self.get_user_as_json(), "users")
+        has_exception(response)
+        return response
 
     def is_exists(self):
         """
         Checking if the user already exists
         :return: user id
         """
-
-        try:
-            user_response = DataBase.get_item({"email": self.defaults["email"].lower()}, "users")
-            return json_resp("User already exists", 409) if user_response else False
-
-        except Exception as e:
-            return {"error": str(e)}, 500
+        user_response = DataBase.get_item({"email": self.defaults["email"].lower()}, "users")
+        has_exception(user_response)
+        return json_resp("User already exists", HTTPStatus.CONFLICT) if user_response else False
 
     def get_user_as_json(self):
         """
@@ -59,16 +55,13 @@ class User:
         :param user: user object
         :return: user id
         """
-        try:
-            is_exists = user.is_exists()
+        is_exists = user.is_exists()
 
-            if not is_exists:
-                response = user.save_user()
-                return json_resp(response.inserted_id, 201)
+        if is_exists:
             return is_exists
 
-        except Exception as e:
-            return {"error": str(e)}, 500
+        response = user.save_user()
+        return json_resp(response.inserted_id, HTTPStatus.CREATED)
 
     @staticmethod
     def get_user_instance(user_schema):
@@ -85,12 +78,9 @@ class User:
         :param email_login_details: email
         :return: user instance / False if user not found
         """
-        try:
-            user_response = DataBase.get_item_by_filter(email_login_details, "users")
-            return user_response if user_response else False
-
-        except Exception as e:
-            return {"error": str(e)}, 500
+        user_response = DataBase.get_item_by_filter(email_login_details, "users")
+        has_exception(user_response)
+        return user_response if user_response else False
 
     @staticmethod
     def update_user(userId, new_data):
@@ -100,17 +90,6 @@ class User:
         :param new_data: New data
         :return: original user document
         """
-        try:
-            updated_user = DataBase.update_item([{"_id": userId}, {"$set": new_data}], "users")
-            return json_resp(updated_user, 200) if updated_user else json_resp("User not found", 404)
-
-            # user = DataBase.get_item_by_filter({"_id": ObjectId(userId)}, "users")
-            #
-            # if user:
-            #     return DataBase.update_item([{"_id": userId}, {"$set": new_data}], "users")
-            #
-            # else:
-            #     return Response("User not found - update failed!", mimetype="application/json")
-
-        except Exception as e:
-            return {"error": str(e)}, 500
+        updated_user = DataBase.update_item([{"_id": userId}, {"$set": new_data}], "users")
+        has_exception(updated_user)
+        return json_resp(updated_user, HTTPStatus.OK) if updated_user else json_resp("User not found", HTTPStatus.NOT_FOUND)

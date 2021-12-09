@@ -1,7 +1,9 @@
 import config
 
 from flask import Flask, Blueprint
+
 from api.database.mongo import DataBase as db
+from api.errors import register_error_handlers
 
 
 def create_app():
@@ -11,8 +13,15 @@ def create_app():
     # app configuration
     app.config.from_object(config.exportConfig)
 
-    # database initialization
-    collection = db.get_instance(app)
+    # register error handlers
+    register_error_handlers(app)
+
+    try:
+        # database initialization
+        collection = db.get_instance(app)
+
+    except Exception as e:
+        return {"Error: ", str(e)}
 
     # blueprints registering
     from api.routes import v1 as routes
