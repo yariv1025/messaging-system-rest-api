@@ -1,7 +1,7 @@
 from passlib.hash import pbkdf2_sha256
 from http import HTTPStatus
 
-from api.utilities import now_datetimeUTC, json_resp, has_exception
+from api.utilities import now_datetimeUTC, json_resp, handle_query
 from api.database.mongo import DataBase
 
 
@@ -29,17 +29,14 @@ class User:
         Saving user into db
         :return: user id
         """
-        response = DataBase.save_item(self.get_user_as_json(), "users")
-        has_exception(response)
-        return response
+        return handle_query(DataBase.save_item(self.get_user_as_json(), "users"))
 
     def is_exists(self):
         """
         Checking if the user already exists
         :return: user id
         """
-        user_response = DataBase.get_item({"email": self.defaults["email"].lower()}, "users")
-        has_exception(user_response)
+        user_response = handle_query(DataBase.get_item({"email": self.defaults["email"].lower()}, "users"))
         return json_resp("User already exists", HTTPStatus.CONFLICT) if user_response else False
 
     def get_user_as_json(self):
@@ -78,8 +75,7 @@ class User:
         :param email_login_details: email
         :return: user instance / False if user not found
         """
-        user_response = DataBase.get_item_by_filter(email_login_details, "users")
-        has_exception(user_response)
+        user_response = handle_query(DataBase.get_item_by_filter(email_login_details, "users"))
         return user_response if user_response else False
 
     @staticmethod
@@ -90,6 +86,5 @@ class User:
         :param new_data: New data
         :return: original user document
         """
-        updated_user = DataBase.update_item([{"_id": userId}, {"$set": new_data}], "users")
-        has_exception(updated_user)
+        updated_user = handle_query(DataBase.update_item([{"_id": userId}, {"$set": new_data}], "users"))
         return json_resp(updated_user, HTTPStatus.OK) if updated_user else json_resp("User not found", HTTPStatus.NOT_FOUND)

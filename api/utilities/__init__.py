@@ -89,19 +89,6 @@ def split_data(message):
     return data
 
 
-def handle_query(query):
-    """
-    Query handling by General try-except
-    :param query: query
-    :return: query result
-    """
-    try:
-        return query
-
-    except Exception as e:
-        return json_resp({"message": "Error", "exception": str(e)}, 500)
-
-
 def authorize_required(f):
     """
     Auth decorator to check if the user is authorized
@@ -122,6 +109,7 @@ def authorize_required(f):
             raise APIError(f"Error: {e}", HTTPStatus.BAD_REQUEST)
 
         return f(claim, access_token, **kwargs)
+
     return decorated
 
 
@@ -186,11 +174,23 @@ def is_access_token_blocked(token):
     return True if token in blocklist else False
 
 
-def has_exception(response):
+def handle_query(query):
     """
-    Check if the response has exception
-    :param response: response
-    :return: None
+    Query handling by General try-except
+    :param query: query
+    :return: query result
     """
-    if isinstance(response, APIError):
-        raise APIError(response.message, response.status_code)
+
+    if isinstance(query, APIError):
+        raise APIError(query.message, query.status_code)
+    return query
+
+#
+# def has_exception(response):
+#     """
+#     Check if the response has exception
+#     :param response: response
+#     :return: None
+#     """
+#     if isinstance(response, APIError):
+#         raise APIError(response.message, response.status_code)
