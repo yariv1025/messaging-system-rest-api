@@ -34,5 +34,5 @@ config = {
     'default': DevelopmentConfig
 }
 
-exportConfig = config[os.getenv('FLASK_ENV')]
+exportConfig = config[os.getenv('FLASK_ENV', 'default')]
 

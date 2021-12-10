@@ -31,7 +31,7 @@ def login_user(user_data):
 
 @user_blueprint.route('/oauth/logout', methods=['POST'])
 @authorize_required
-def logout_user(data):
+def logout_user(data, *args):
     """
     Postman exam: WEB_ROUTE/oauth/logout
     :return: response
@@ -39,5 +39,5 @@ def logout_user(data):
     # Note: Need to implement Token Revoking/Blocklisting in mongo
     # Info: https://flask-jwt-extended.readthedocs.io/en/latest/blocklist_and_token_revoking/
     # Info: https://darksun-flask-jwt-extended.readthedocs.io/en/latest/blacklist_and_token_revoking/
-    return logout()
-
+    access_token = args[0]
+    return logout(access_token)

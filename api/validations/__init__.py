@@ -2,7 +2,9 @@ import json
 from functools import wraps
 from cerberus import Validator
 from flask import request
+from http import HTTPStatus
 
+from api.errors import APIError
 from api.utilities import json_resp, split_data
 
 
@@ -35,21 +37,16 @@ def validate_request(schema_name, desired_format):
 
     def decorator(f):
         @wraps(f)
-        def wrapper(*args, **kw):
-            try:
-                raw_data = request.get_data(as_text=True)
-                data = split_data(raw_data)
-                schema = get_blueprint_schema(schema_name, desired_format)[0]
-                v = Validator()
+        def wrapper(*args, **kwargs):
+            raw_data = request.get_data(as_text=True)
+            data = split_data(raw_data)
+            schema = get_blueprint_schema(schema_name, desired_format)[0]
+            v = Validator()
 
-                if v.validate(data, schema):
-                    return f(*args, data)
-                else:
-                    return json_resp({"Validation error": str(v.errors)}, 400)
+            if not v.validate(data, schema):
+                raise APIError(f"Validation error {v.errors}", HTTPStatus.BAD_REQUEST)
 
-            except BaseException as e:
-                return json_resp({"ValidationError": str(e)}, 400)
+            return f(*args, data)
 
         return wrapper
-
     return decorator

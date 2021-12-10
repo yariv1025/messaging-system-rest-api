@@ -8,9 +8,12 @@ from flask import Response, request, Blueprint
 from bson import json_util
 from pytz import timezone, UTC
 from functools import wraps
-from jose import jwt
+from jose import jwt, ExpiredSignatureError
+from http import HTTPStatus
 
+from api.errors.errors import APIError
 from api.database.blocklist import blocklist
+from api.errors import APIError
 
 utilities_blueprint = Blueprint("utilities", __name__)
 conf = config.Config()
@@ -86,19 +89,6 @@ def split_data(message):
     return data
 
 
-def handle_query(query):
-    """
-    Query handling by General try-except
-    :param query: query
-    :return: query result
-    """
-    try:
-        return query
-
-    except Exception as e:
-        return json_resp({"message": "Error", "exception": str(e)}, 500)
-
-
 def authorize_required(f):
     """
     Auth decorator to check if the user is authorized
@@ -108,19 +98,17 @@ def authorize_required(f):
 
     @wraps(f)
     def decorated(*args, **kwargs):
+        access_token = request.headers['Authorization'].split()[1]
+
+        if (not access_token) or is_access_token_blocked(access_token):
+            raise APIError("Invalid access token", HTTPStatus.BAD_REQUEST)
 
         try:
-            access_token = request.headers['Authorization'].split()[1]
-
-            if is_access_token_blocked(access_token):
-                return json_resp({"message": "Token is invalid"}, 401)
-
             claim = jwt.decode(access_token, conf.SECRET_KEY)
+        except ExpiredSignatureError as e:
+            raise APIError(f"Error: {e}", HTTPStatus.BAD_REQUEST)
 
-        except Exception as e:
-            return json_resp({"message": "Token is invalid", "exception": str(e)}, 401)
-
-        return f(claim, *args, **kwargs)
+        return f(claim, access_token, **kwargs)
 
     return decorated
 
@@ -184,3 +172,25 @@ def is_access_token_blocked(token):
     :return: True or False
     """
     return True if token in blocklist else False
+
+
+def handle_query(query):
+    """
+    Query handling by General try-except
+    :param query: query
+    :return: query result
+    """
+
+    if isinstance(query, APIError):
+        raise APIError(query.message, query.status_code)
+    return query
+
+#
+# def has_exception(response):
+#     """
+#     Check if the response has exception
+#     :param response: response
+#     :return: None
+#     """
+#     if isinstance(response, APIError):
+#         raise APIError(response.message, response.status_code)

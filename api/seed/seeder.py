@@ -33,7 +33,6 @@ def create_users():
             response = user.save_user()
             user_id.append(response.inserted_id)
 
-        f.close()
         return user_id
 
     except (IOError, EOFError, FileNotFoundError) as e:
@@ -54,8 +53,6 @@ def create_messages(user_id):
             id_number = user_id.pop()
             message = Message(id_number, message["sender"], message["receiver"], message["subject"], message["message"])
             message.save()
-
-        f.close()
 
     except (IOError, EOFError, FileNotFoundError) as e:
         print("Error. {}".format(e.args[-1]))
