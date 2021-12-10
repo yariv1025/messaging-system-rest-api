@@ -1,7 +1,9 @@
 from bson import ObjectId
 from flask import json
 from werkzeug.exceptions import BadRequestKeyError
+from http import HTTPStatus
 
+from api.errors.errors import APIError
 from api.utilities import json_resp, request
 from api.models.message import Message
 
@@ -13,21 +15,17 @@ def read_message(message_id, user_data):
     :param user_data: user details
     :return: message object as JSON
     """
+    user_id = json.loads(user_data["user_id"])["$oid"]
+    message = Message.get_message(message_id)
 
-    try:
-        user_id = json.loads(user_data["user_id"])["$oid"]
-        message = Message.get_message(message_id)
+    if message is None:
+        raise APIError("Message not exist!", HTTPStatus.NOT_FOUND)
 
-        # Message found & it belong to user
-        if message is not None:
-            if message["sender_id"] == user_id:
-                update_is_read_flag([message])
-                return json_resp(message, 200)
-            return json_resp("Forbidden!", 403)
-        return json_resp("Message not exist!", 404)
+    if message["sender_id"] != user_id:
+        raise APIError("Forbidden!", HTTPStatus.FORBIDDEN)
 
-    except Exception as e:
-        return json_resp({"message": "Error", "exception": str(e)}, 500)
+    update_is_read_flag([message])
+    return json_resp(message, 200)
 
 
 def read_all_messages(user_data):
@@ -36,27 +34,21 @@ def read_all_messages(user_data):
     :param user_data: user details
     :return: messages as JSON
     """
-    try:
-        user_id = json.loads(user_data["user_id"])["$oid"]
-        is_read = request.args.get('only_unread')
+    user_id = json.loads(user_data["user_id"])["$oid"]
+    is_read = request.args.get('only_unread')
 
-        if is_read == 'False' or is_read == 'false':
-            messages = Message.get_all_messages(user_id)
-        elif is_read == 'True' or is_read == 'true':
-            messages = Message.get_unread_messages(user_id)
-        else:
-            raise ValueError("Invalid parameter. only_unread parameter should be True or False.")
+    if is_read == 'False' or is_read == 'false':
+        messages = Message.get_all_messages(user_id)
+    elif is_read == 'True' or is_read == 'true':
+        messages = Message.get_unread_messages(user_id)
+    else:
+        raise APIError("Invalid parameter. only_unread parameter should be True or False.", HTTPStatus.BAD_REQUEST)
 
-        if messages is not None:
-            update_is_read_flag(messages)
-            return json_resp([message for message in messages], 200)
-        return json_resp([], 404)
+    if messages is None:
+        return json_resp([], HTTPStatus.NOT_FOUND)
 
-    except BadRequestKeyError as e:
-        return json_resp({"message": "Missing parameter", "exception": str(e)}, 400)
-
-    except Exception as e:
-        return json_resp({"message": "Error", "exception": str(e)}, 500)
+    update_is_read_flag(messages)
+    return json_resp([message for message in messages], HTTPStatus.OK)
 
 
 def delete_message(message_id, user_data):
@@ -66,19 +58,14 @@ def delete_message(message_id, user_data):
     :param user_data: user details
     :return: the number of deleted messages
     """
-    try:
-        user_id = json.loads(user_data["user_id"])["$oid"]
-        message = Message.get_message(message_id)
+    user_id = json.loads(user_data["user_id"])["$oid"]
+    message = Message.get_message(message_id)
 
-        if message is not None and message["sender_id"] == user_id:
-            # Message found & message belong to user
-            response = Message.delete(message_id)
-            return json_resp(response.deleted_count, 200)
-        else:
-            return json_resp("Message not found!", 404)
+    if message is None or message["sender_id"] != user_id:
+        raise APIError("Forbidden!", HTTPStatus.FORBIDDEN)
 
-    except Exception as e:
-        return json_resp({"message": "Error", "exception": str(e)}, 500)
+    response = Message.delete(message_id)
+    return json_resp(response.deleted_count, 200)
 
 
 def write_message(user_data, message):
@@ -88,21 +75,14 @@ def write_message(user_data, message):
     :param message: user message
     :return: message id
     """
-    try:
-        user_id = json.loads(user_data["user_id"])["$oid"]
-        message_obj = Message(user_id,
-                              message['sender'],
-                              message['receiver'],
-                              message['subject'],
-                              message['message'])
+    user_id = json.loads(user_data["user_id"])["$oid"]
+    message_obj = Message(user_id,
+                          message['sender'],
+                          message['receiver'],
+                          message['subject'],
+                          message['message'])
 
-        return json_resp(message_obj.save().inserted_id, 201)
-
-    except (BadRequestKeyError, IndexError) as e:
-        return json_resp({"message": "Missing parameter", "exception": str(e)}, 400)
-
-    except Exception as e:
-        return json_resp({"message": "Error", "exception": str(e)}, 500)
+    return json_resp(message_obj.save().inserted_id, 201)
 
 
 def update_is_read_flag(messages):

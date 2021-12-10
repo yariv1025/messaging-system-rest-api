@@ -9,7 +9,7 @@ message_blueprint = Blueprint('message', __name__)
 
 @message_blueprint.route('/messages', methods=['GET'])
 @authorize_required
-def get_messages(user_data):
+def get_messages(user_data, *args, **kwargs):
     """
     Get all read messages / unread messages
     Postman exam: WEB_ROUTE/messages?only_unread=True
@@ -21,7 +21,7 @@ def get_messages(user_data):
 
 @message_blueprint.route('/messages/<string:messageId>', methods=['GET'])
 @authorize_required
-def get_single_message(user_data, **kwargs):
+def get_single_message(user_data, *args, **kwargs):
     """
     Get message by id
     Postman exam: WEB_ROUTE/messages/MESSAGE_ID_FROM_MONGO_DB
@@ -33,7 +33,7 @@ def get_single_message(user_data, **kwargs):
 
 @message_blueprint.route('/messages/<string:messageId>', methods=['DELETE'])
 @authorize_required
-def delete(user_data, **kwargs):
+def delete(user_data, *args, **kwargs):
     """
     Delete specific message by id
     Postman exam: WEB_ROUTE/messages/MESSAGE_ID_FROM_MONGO_DB
@@ -46,12 +46,12 @@ def delete(user_data, **kwargs):
 @message_blueprint.route('/messages', methods=['POST'])
 @authorize_required
 @validate_request("message", "create")
-def set_message(user_data, message):
+def set_message(user_data, *args, **kwargs):
     """
     Post message
     Postman exam: WEB_ROUTE/messages
     :param user_data: user details
-    :param message: user message
     :return: message id
     """
+    message = args[1]
     return write_message(user_data, message)
