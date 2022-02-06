@@ -26,7 +26,8 @@ def create_app():
     # blueprints registering
     from api.routes import v1 as routes
     blueprints_candidate = vars(routes).values()
-    blueprints_list = list(filter(lambda blueprint: isinstance(blueprint, Blueprint), blueprints_candidate))
+    # blueprints_list = list(filter(lambda blueprint: isinstance(blueprint, Blueprint), blueprints_candidate))
+    blueprints_list = [blueprint for blueprint in blueprints_candidate if isinstance(blueprint, Blueprint)]
     [app.register_blueprint(blueprint) for blueprint in blueprints_list]
 
     return app
